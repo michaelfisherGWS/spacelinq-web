@@ -99,3 +99,22 @@
     width: 241px;
   }
 }
+
+.insurance {
+  margin-bottom: 12px;
+}
+
+.insuranceFields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px 24px;
+  margin-top: 12px;
+
+  @media (--viewportMedium) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.insuranceField {
+  margin: 0;
+}

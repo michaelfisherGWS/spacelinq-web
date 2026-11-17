@@ -298,7 +298,7 @@ const SpaceLinqPricingForm = props => {
             <p className={css.hint}>
               <FormattedMessage id="SpaceLinqPricingForm.insuranceHelp" />
             </p>
-            <div className={css.addOn}>
+            <div className={css.insurance}>
               <FieldCheckbox
                 id={`${formId}.insuranceOffered`}
                 name="insuranceOffered"
@@ -306,12 +306,12 @@ const SpaceLinqPricingForm = props => {
                 label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceOffered' })}
               />
               {(values.insuranceOffered || []).includes('yes') ? (
-                <>
+                <div className={css.insuranceFields}>
                   <FieldCurrencyInput
                     placeholder="0.00"
                     id={`${formId}.insuranceRate`}
                     name="insuranceRate"
-                    className={css.addOnPrice}
+                    className={css.insuranceField}
                     label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceRate' })}
                     currencyConfig={currencyConfig}
                     validate={required(
@@ -322,7 +322,7 @@ const SpaceLinqPricingForm = props => {
                     placeholder="0.00"
                     id={`${formId}.insuranceDgRate`}
                     name="insuranceDgRate"
-                    className={css.addOnPrice}
+                    className={css.insuranceField}
                     label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceDgRate' })}
                     currencyConfig={currencyConfig}
                   />
@@ -330,7 +330,7 @@ const SpaceLinqPricingForm = props => {
                     placeholder="0.00"
                     id={`${formId}.insuranceMaxValue`}
                     name="insuranceMaxValue"
-                    className={css.addOnPrice}
+                    className={css.insuranceField}
                     label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceMaxValue' })}
                     currencyConfig={currencyConfig}
                     validate={required(
@@ -341,11 +341,11 @@ const SpaceLinqPricingForm = props => {
                     type="text"
                     id={`${formId}.insuranceExclusions`}
                     name="insuranceExclusions"
-                    className={css.addOnPrice}
+                    className={css.insuranceField}
                     maxLength={300}
                     label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceExclusions' })}
                   />
-                </>
+                </div>
               ) : null}
             </div>
 
