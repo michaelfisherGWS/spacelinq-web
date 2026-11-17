@@ -139,7 +139,9 @@ const SpaceLinqPaymentSchedule = props => {
           {noticeResult.cancelled > 0 ? (
             <FormattedMessage
               id="SpaceLinqPaymentSchedule.noticeGiven"
-              values={{ date: formatDate(new Date(noticeResult.endsAt)) }}
+              values={{
+                date: formatDate(new Date(new Date(noticeResult.endsAt).getTime() - MS_PER_DAY)),
+              }}
             />
           ) : (
             <FormattedMessage id="SpaceLinqPaymentSchedule.noticeNothingToCancel" />

@@ -1615,7 +1615,7 @@
   "SpaceLinqPaymentSchedule.confirmNoticeText": "Giving notice cancels every month that starts more than one month from today. Months starting before then stay booked and are charged as normal.",
   "SpaceLinqPaymentSchedule.confirmNotice": "Give one month's notice",
   "SpaceLinqPaymentSchedule.keepBooking": "Keep my booking",
-  "SpaceLinqPaymentSchedule.noticeGiven": "Notice given. Your storage ends on {date}.",
+  "SpaceLinqPaymentSchedule.noticeGiven": "Notice given. Your last day of storage is {date}.",
   "SpaceLinqPaymentSchedule.noticeNothingToCancel": "There are no months left to cancel. The remaining months start within the notice period.",
   "SpaceLinqPaymentSchedule.noticeError": "Something went wrong and notice was not given. Please try again.",
   "SpaceLinqPaymentSchedule.loadError": "The monthly payments could not be loaded. Please refresh the page."
