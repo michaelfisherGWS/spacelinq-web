@@ -1541,5 +1541,9 @@
   "UserNav.accountSettings": "Réglages",
   "UserNav.profileSettings": "Profil",
   "UserNav.screenreader.userNav": "Navigation du profil utilisateur",
-  "UserNav.yourListings": "Mes annonces"
+  "UserNav.yourListings": "Mes annonces",
+  "SendMessageForm.contactDetailsNotice": "To keep everyone protected, phone numbers, emails and links are hidden until a booking is confirmed.",
+  "EditListingLocationForm.siteNotes": "Site access and contact details {optionalText}",
+  "EditListingLocationForm.siteNotesPlaceholder": "e.g. Gate code, loading dock hours, on-site contact name and phone",
+  "EditListingLocationForm.privacyNote": "Your exact address and these site details stay private. Customers only see your suburb and an approximate map pin until you accept their booking, then they're shared automatically in the booking messages."
 }

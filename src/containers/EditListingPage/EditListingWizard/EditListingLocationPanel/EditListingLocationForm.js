@@ -132,6 +132,24 @@ export const EditListingLocationForm = props => (
             })}
           />
 
+          {/* SpaceLinq: private site notes, released to the customer when a booking is accepted */}
+          <FieldTextInput
+            className={css.building}
+            type="textarea"
+            name="siteNotes"
+            id={`${formId}siteNotes`}
+            label={intl.formatMessage(
+              { id: 'EditListingLocationForm.siteNotes' },
+              { optionalText }
+            )}
+            placeholder={intl.formatMessage({
+              id: 'EditListingLocationForm.siteNotesPlaceholder',
+            })}
+          />
+          <p className={css.privacyNote}>
+            <FormattedMessage id="EditListingLocationForm.privacyNote" />
+          </p>
+
           <Button
             className={css.submitButton}
             type="submit"

@@ -170,6 +170,9 @@ class SendMessageFormComponent extends Component {
                 onFocus={this.handleFocus}
                 onBlur={this.handleBlur}
               />
+              <p className={css.contactNotice}>
+                <FormattedMessage id="SendMessageForm.contactDetailsNotice" />
+              </p>
               {showUploads ? (
                 <div className={css.files}>
                   {files.map(f => (

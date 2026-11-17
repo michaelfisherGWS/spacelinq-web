@@ -112,3 +112,14 @@
   gap: 8px;
   align-self: stretch;
 }
+
+/* SpaceLinq: notice about hidden contact details */
+.contactNotice {
+  composes: marketplaceTinyFontStyles from global;
+  margin: 6px 0 0 0;
+  color: var(--colorGrey500);
+
+  @media (--viewportMedium) {
+    margin: 8px 0 0 0;
+  }
+}

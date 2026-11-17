@@ -13,6 +13,7 @@ import { propTypes } from '../../../util/types';
 import { ensurePaymentMethodCard } from '../../../util/data';
 import { getPropsForCustomTransactionFieldInputs } from '../../../util/fieldHelpers';
 import { STRIPE_JS_LOADED_EVENT } from '../../../util/includeScripts';
+import { maskContactDetails } from '../../../util/contactMasking';
 import { PAYMENT_METHOD_CARD } from '../../../transactions/paymentMethods';
 import {
   isDownloadProcess,
@@ -604,7 +605,8 @@ class StripePaymentForm extends Component {
 
     const { initialMessage } = values;
     onSubmit({
-      message: initialMessage ? initialMessage.trim() : null,
+      // SpaceLinq: hide phone numbers, emails and links before the booking is accepted.
+      message: initialMessage ? maskContactDetails(initialMessage.trim()).text : null,
       card: this.card,
       formId,
       formValues: values,

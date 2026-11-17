@@ -5,6 +5,7 @@ import { storableError } from '../../util/errors';
 import { addMarketplaceEntities } from '../../ducks/marketplaceData.duck';
 import { transactionLineItems } from '../../util/api';
 import * as log from '../../util/log';
+import { maskContactDetails } from '../../util/contactMasking';
 import { denormalisedResponseEntities } from '../../util/data';
 import {
   bookingTimeUnits,
@@ -295,8 +296,10 @@ const sendInquiryPayloadCreator = (
     .then(response => {
       const transactionId = response.data.data.id;
 
-      // Send the message to the created transaction
-      return sdk.messages.send({ transactionId, content: message }).then(() => {
+      // Send the message to the created transaction.
+      // SpaceLinq: contact details are hidden in enquiries (no booking yet).
+      const content = maskContactDetails(message).text;
+      return sdk.messages.send({ transactionId, content }).then(() => {
         dispatch(setCurrentUserHasOrders());
         return transactionId;
       });

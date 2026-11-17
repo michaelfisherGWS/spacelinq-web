@@ -4,6 +4,8 @@ import classNames from 'classnames';
 // Import configs and util modules
 import { FormattedMessage } from '../../../../util/reactIntl';
 import { LISTING_STATE_DRAFT } from '../../../../util/types';
+import { types as sdkTypes } from '../../../../util/sdkLoader';
+import { approximateCoordinates, publicAreaFromAddress } from '../../../../util/locationPrivacy';
 
 // Import shared components
 import { H3, ListingLink } from '../../../../components';
@@ -14,20 +16,28 @@ import css from './EditListingLocationPanel.module.css';
 
 const getInitialValues = props => {
   const { listing } = props;
-  const { geolocation, publicData } = listing?.attributes || {};
+  const { geolocation, publicData, privateData } = listing?.attributes || {};
+
+  // SpaceLinq: the provider edits their exact, private location. Fall back to
+  // public data for listings created before location privacy was added.
+  const exactLocation = privateData?.exactLocation;
+  const address = exactLocation?.address || publicData?.location?.address;
+  const building = exactLocation?.building || publicData?.location?.building;
+  const origin = exactLocation?.lat
+    ? new sdkTypes.LatLng(exactLocation.lat, exactLocation.lng)
+    : geolocation;
 
   // Only render current search if full place object is available in the URL params
   // TODO bounds are missing - those need to be queried directly from Google Places
-  const locationFieldsPresent = publicData?.location?.address && geolocation;
-  const location = publicData?.location || {};
-  const { address, building } = location;
+  const locationFieldsPresent = address && origin;
 
   return {
     building,
+    siteNotes: exactLocation?.siteNotes,
     location: locationFieldsPresent
       ? {
           search: address,
-          selectedPlace: { address, origin: geolocation },
+          selectedPlace: { address, origin },
         }
       : null,
   };
@@ -99,16 +109,33 @@ const EditListingLocationPanel = props => {
         className={css.form}
         initialValues={state.initialValues}
         onSubmit={values => {
-          const { building = '', location } = values;
+          const { building = '', siteNotes = '', location } = values;
           const {
             selectedPlace: { address, origin },
           } = location;
 
+          // SpaceLinq unlock model: only the area and an approximate pin are public.
+          // The exact address, unit and site notes are private to the provider and
+          // are shared with the customer once a booking is accepted.
+          const approx = approximateCoordinates(origin);
+          const publicGeolocation = approx
+            ? new sdkTypes.LatLng(approx.lat, approx.lng)
+            : origin;
+
           // New values for listing attributes
           const updateValues = {
-            geolocation: origin,
+            geolocation: publicGeolocation,
             publicData: {
-              location: { address, building },
+              location: { address: publicAreaFromAddress(address) },
+            },
+            privateData: {
+              exactLocation: {
+                address,
+                building,
+                siteNotes,
+                lat: origin?.lat,
+                lng: origin?.lng,
+              },
             },
           };
           // Save the initialValues to state
@@ -117,6 +144,7 @@ const EditListingLocationPanel = props => {
           setState({
             initialValues: {
               building,
+              siteNotes,
               location: { search: address, selectedPlace: { address, origin } },
             },
           });

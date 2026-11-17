@@ -25,6 +25,8 @@ import {
   isNegotiationProcess,
 } from '../../transactions/transaction';
 import { messageHasPendingFiles, executeFileUpload } from '../../util/fileHelpers';
+import { maskContactDetails, isContactUnlocked } from '../../util/contactMasking';
+import { buildSiteDetailsMessage } from '../../util/locationPrivacy';
 
 import { addMarketplaceEntities } from '../../ducks/marketplaceData.duck';
 import { fetchCurrentUserNotifications } from '../../ducks/user.duck';
@@ -323,6 +325,25 @@ export const fetchTransaction = (id, txRole, config) => dispatch => {
   return dispatch(fetchTransactionThunk({ id, txRole, config }));
 };
 
+// SpaceLinq: post the exact site details to the booking thread once accepted.
+// Runs in the provider's app (only the provider can read the listing's private data).
+// Failures are logged but don't block the accept transition.
+const sendUnlockedSiteDetails = (sdk, txId, listingId) => {
+  if (!listingId) {
+    return Promise.resolve();
+  }
+  return sdk.ownListings
+    .show({ id: listingId })
+    .then(res => {
+      const exactLocation = res?.data?.data?.attributes?.privateData?.exactLocation;
+      const content = buildSiteDetailsMessage(exactLocation, exactLocation?.siteNotes);
+      return content ? sdk.messages.send({ transactionId: txId, content }) : null;
+    })
+    .catch(e => {
+      log.error(e, 'spacelinq-site-details-send-failed', { txId: txId?.uuid });
+    });
+};
+
 ////////////////////
 // makeTransition //
 ////////////////////
@@ -377,6 +398,13 @@ const makeTransitionPayloadCreator = (
     .then(response => {
       dispatch(addMarketplaceEntities(response));
       dispatch(fetchCurrentUserNotifications());
+
+      // SpaceLinq unlock model: when the provider accepts a booking, share the
+      // exact site address and access/contact notes in the booking messages.
+      if (transitionName === process?.transitions?.ACCEPT) {
+        const listingId = transaction?.relationships?.listing?.data?.id;
+        sendUnlockedSiteDetails(sdk, txId, listingId);
+      }
 
       // There could be automatic transitions after this transition
       // For example mark-received-from-purchased > auto-complete.
@@ -679,11 +707,18 @@ export const downloadFile = (fileAttachmentId, isOwnFile = false) => dispatch =>
 // sendMessage //
 /////////////////
 const sendMessagePayloadCreator = (
-  { txId, message, config, fileIds },
-  { dispatch, rejectWithValue, extra: sdk }
+  { txId, message, config, fileIds, skipMasking = false },
+  { dispatch, rejectWithValue, extra: sdk, getState }
 ) => {
+  // SpaceLinq: hide phone numbers, emails and links until the booking is accepted.
+  const transaction = getState()?.marketplaceData?.entities?.transaction?.[txId?.uuid];
+  const processName = resolveLatestProcessName(transaction?.attributes?.processName);
+  const process = processName ? getProcess(processName) : null;
+  const unlocked = isContactUnlocked(transaction, tx => process?.getState(tx));
+  const content = skipMasking || unlocked ? message : maskContactDetails(message).text;
+
   return sdk.messages
-    .send({ transactionId: txId, content: message, publicFileAttachments: fileIds })
+    .send({ transactionId: txId, content, publicFileAttachments: fileIds })
     .then(response => {
       const messageId = response.data.data.id;
 

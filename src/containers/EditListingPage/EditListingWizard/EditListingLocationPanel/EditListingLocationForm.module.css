@@ -65,3 +65,10 @@
     margin-top: 100px;
   }
 }
+
+/* SpaceLinq: explains which location details are public */
+.privacyNote {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey500);
+  margin: 0 0 24px 0;
+}

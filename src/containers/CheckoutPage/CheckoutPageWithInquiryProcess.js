@@ -16,6 +16,7 @@ import {
   getPropsForCustomTransactionFieldInputs,
   pickTransactionFieldsData,
 } from '../../util/fieldHelpers.js';
+import { maskContactDetails } from '../../util/contactMasking';
 import { getProcess } from '../../transactions/transaction';
 
 // Import shared components
@@ -57,7 +58,8 @@ const handleSubmit = (submitting, setSubmitting, props) => values => {
     transactionFieldConfigs = [],
   } = props;
 
-  const { inquiryMessage } = values;
+  // SpaceLinq: hide phone numbers, emails and links in enquiries.
+  const inquiryMessage = maskContactDetails(values.inquiryMessage).text;
 
   const { listingType, transactionProcessAlias, unitType } =
     pageData?.listing?.attributes?.publicData || {};

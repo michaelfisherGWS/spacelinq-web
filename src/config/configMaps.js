@@ -57,7 +57,9 @@ export const search = {
 // coordinates are still accessible in the HTTP requests and the
 // Redux store.
 export const fuzzy = {
-  enabled: false,
+  // SpaceLinq: show an approximate area circle instead of an exact pin.
+  // (Public coordinates are also rounded when the listing is saved.)
+  enabled: true,
 
   // Amount of maximum offset in meters that is applied to obfuscate
   // the original coordinates. The actual value is random, but the
