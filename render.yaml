@@ -17,15 +17,15 @@ services:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
-        value: "24"
+        value: '24'
       - key: REACT_APP_ENV
         value: development
       - key: REACT_APP_MARKETPLACE_NAME
         value: SpaceLinq
       - key: REACT_APP_SHARETRIBE_USING_SSL
-        value: "true"
+        value: 'true'
       - key: SERVER_SHARETRIBE_TRUST_PROXY
-        value: "true"
+        value: 'true'
       - key: REACT_APP_CSP
         value: report
       # Set after the first deploy to the onrender.com address, then redeploy.
