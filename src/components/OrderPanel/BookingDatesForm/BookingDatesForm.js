@@ -850,15 +850,17 @@ export const BookingDatesForm = props => {
                 return v ? getStartAndEndOnTimeZone(startDate, endDate, isDaily, timeZone) : v;
               }}
               useMobileMargins
-              validate={composeValidators(
-                required(
-                  intl.formatMessage({
-                    id: 'BookingDatesForm.requiredDate',
-                  })
-                ),
-                bookingDatesRequired(startDateErrorMessage, endDateErrorMessage),
-                minTermValidator(minTermMonths, intl)
-              )}
+              validate={(value, allValues) =>
+                // SpaceLinq: the minimum term check needs the other form values (ongoing bookings)
+                composeValidators(
+                  required(
+                    intl.formatMessage({
+                      id: 'BookingDatesForm.requiredDate',
+                    })
+                  ),
+                  bookingDatesRequired(startDateErrorMessage, endDateErrorMessage)
+                )(value) || minTermValidator(minTermMonths, intl)(value, allValues)
+              }
               isDayBlocked={isDayBlocked}
               isOutsideRange={isOutsideRange}
               isBlockedBetween={isBlockedBetween(relevantTimeSlots, timeZone)}
