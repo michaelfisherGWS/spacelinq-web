@@ -221,3 +221,131 @@ export const serviceRates = [
   { key: 'returns', group: 'Value-added', label: 'Returns processing', unit: 'item' },
   { key: 'labour-hour', group: 'Value-added', label: 'Labour for other work', unit: 'hour' },
 ];
+
+const slug = label =>
+  label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+const multiEnumField = (key, label, options, listingTypeIds) => ({
+  key,
+  scope: 'public',
+  schemaType: 'multi-enum',
+  enumOptions: options.map(o => ({ option: slug(o), label: o })),
+  ...(listingTypeIds ? { listingTypeConfig: { limitToListingTypeIds: true, listingTypeIds } } : {}),
+  // Not searchable until the field is also added in Console, which creates the search schema.
+  filterConfig: { indexForSearch: false, label },
+  showConfig: { label, displayOnListingPage: true },
+  saveConfig: { label, isRequired: false },
+});
+
+/**
+ * Listing fields SpaceLinq adds on top of the ones managed in Console.
+ * A Console field with the same key replaces the one here.
+ */
+export const extraListingFields = [
+  multiEnumField('inbound_services', 'Inbound services', [
+    'Container devanning (unpack)',
+    'Receiving and put-away',
+    'Palletising and wrapping',
+    'Inspection and quality checks',
+  ]),
+  multiEnumField('outbound_services', 'Outbound services', [
+    'Full pallet dispatch',
+    'Carton pick',
+    'Pick and pack (each)',
+    'E-commerce fulfilment',
+    'Cross-docking',
+    'Container loading',
+  ]),
+  multiEnumField('value_added_services', 'Value-added services', [
+    'Kitting and assembly',
+    'Labelling and relabelling',
+    'Repacking',
+    'Returns processing',
+  ]),
+  multiEnumField('transport', 'Transport', [
+    'Local delivery',
+    'Linehaul or freight forwarding',
+    'Container cartage',
+  ]),
+  multiEnumField('systems_reporting', 'Systems and reporting', [
+    'WMS with customer portal',
+    'Stock-on-hand reports',
+    'Stocktakes and cycle counts',
+    'Online store integration',
+  ]),
+  multiEnumField('compliance', 'Compliance and certifications', [
+    'MPI transitional facility',
+    'Customs-controlled area',
+    'Dangerous goods location certificate',
+    'Food-grade (HACCP or similar)',
+    'Insurance held',
+  ]),
+  multiEnumField('site_equipment', 'Site and equipment', [
+    'Forklift on site',
+    'Container-height dock',
+    'Dock leveller',
+    'Drive-in access',
+    'Hardstand',
+    'CCTV',
+    'Monitored alarm',
+    '24/7 access',
+  ]),
+];
+
+/**
+ * Wording changes applied to Console-managed fields, matched by their current label.
+ * - fields: new field labels.
+ * - options: new option labels.
+ * - hiddenFields / hiddenOptions: no longer offered (existing listing data is kept).
+ */
+export const listingFieldWording = {
+  fields: {
+    'Storage type': 'Facility type',
+    'Storage environment': 'Temperature and environment',
+    'Goods type': 'Goods accepted',
+    'Storage format': 'Racking and storage method',
+  },
+  options: {
+    'Bonded / customs-controlled warehouse': 'Customs-controlled area (bonded)',
+    'Container & yard storage': 'Container yard / hardstand',
+    'Self-storage / small units': 'Self-storage or residential (garage, room, shed)',
+    'Ambient / dry (unconditioned)': 'Ambient',
+    'Climate-controlled (temperature + humidity)': 'Temperature-controlled (15–25°C)',
+    'Chilled / refrigerated (2–8°C)': 'Chilled (2–8°C)',
+    'Frozen (-18°C to -25°C)': 'Frozen (−18°C or below)',
+    'Dangerous / hazardous goods': 'Dangerous goods (DG)',
+  },
+  hiddenFields: ['Services offered'],
+  hiddenOptions: ['Outdoor / open-air storage', 'Chemicals'],
+};
+
+/**
+ * Apply SpaceLinq wording to Console-managed listing fields and add the extra fields.
+ *
+ * @param {Array<Object>} hostedFields - listing fields from Console, already restructured
+ * @returns {Array<Object>} listing fields
+ */
+export const applySpaceLinqListingFields = hostedFields => {
+  const w = listingFieldWording;
+  const relabel = label => w.fields[label] || label;
+  const reworded = (hostedFields || [])
+    .filter(f => !w.hiddenFields.includes(f.showConfig?.label))
+    .map(f => ({
+      ...f,
+      ...(f.enumOptions
+        ? {
+            enumOptions: f.enumOptions
+              .filter(o => !w.hiddenOptions.includes(o.label))
+              .map(o => ({ ...o, label: w.options[o.label] || o.label })),
+          }
+        : {}),
+      filterConfig: { ...f.filterConfig, label: relabel(f.filterConfig?.label) },
+      showConfig: { ...f.showConfig, label: relabel(f.showConfig?.label) },
+      saveConfig: { ...f.saveConfig, label: relabel(f.saveConfig?.label) },
+    }));
+  const hostedKeys = reworded.map(f => f.key);
+  return [...reworded, ...extraListingFields.filter(f => !hostedKeys.includes(f.key))];
+};

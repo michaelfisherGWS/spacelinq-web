@@ -1,5 +1,5 @@
 import { subUnitDivisors } from '../config/settingsCurrency';
-import { isSpaceLinqListingType } from '../config/configSpaceLinq';
+import { applySpaceLinqListingFields, isSpaceLinqListingType } from '../config/configSpaceLinq';
 import { getSupportedProcessesInfo, isBookingProcessAlias } from '../transactions/transaction';
 import { sanitizeText } from './sanitize';
 import { EXTENDED_DATA_SCHEMA_TYPES } from './types';
@@ -1427,9 +1427,10 @@ const mergeListingConfig = (hostedConfig, defaultConfigs, categoriesInUse) => {
   const listingTypes = shouldMerge
     ? union(hostedListingTypes, defaultListingTypes, 'listingType')
     : hostedListingTypes;
-  const listingFields = shouldMerge
-    ? union(hostedListingFields, defaultListingFields, 'key')
-    : hostedListingFields;
+  // SpaceLinq: reword Console-managed fields and add the 3PL service, compliance and site fields
+  const listingFields = applySpaceLinqListingFields(
+    shouldMerge ? union(hostedListingFields, defaultListingFields, 'key') : hostedListingFields
+  );
 
   const listingTypesInUse = listingTypes.map(lt => `${lt.listingType}`);
 
