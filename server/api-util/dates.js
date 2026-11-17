@@ -20,7 +20,9 @@ const moment = require('moment');
  * @returns {Number} number of nights between the given dates
  */
 exports.nightsBetween = (startDate, endDate) => {
-  const nights = moment(endDate).diff(startDate, 'days');
+  // SpaceLinq: round to whole days so a period that crosses the start of daylight saving
+  // (23 hours on that day) is not counted one day short.
+  const nights = Math.round(moment(endDate).diff(startDate, 'hours', true) / 24);
   if (nights < 0) {
     throw new Error('End date cannot be before start date');
   }
@@ -46,7 +48,9 @@ exports.nightsBetween = (startDate, endDate) => {
  * @returns {Number} number of days between the given dates
  */
 exports.daysBetween = (startDate, endDate) => {
-  const days = moment(endDate).diff(startDate, 'days');
+  // SpaceLinq: round to whole days so a period that crosses the start of daylight saving
+  // (23 hours on that day) is not counted one day short.
+  const days = Math.round(moment(endDate).diff(startDate, 'hours', true) / 24);
   if (days < 0) {
     throw new Error('End date cannot be before start date');
   }

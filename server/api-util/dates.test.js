@@ -43,3 +43,18 @@ describe('daysBetween()', () => {
     expect(daysBetween(start, end)).toEqual(2);
   });
 });
+
+describe('daysBetween across daylight saving (SpaceLinq)', () => {
+  const { daysBetween } = require('./dates');
+  it('counts 30 days when the clocks go forward during the period', () => {
+    // 19 Sep 2027 00:00 NZST to 19 Oct 2027 00:00 NZDT is 30 days less one hour
+    const start = new Date('2027-09-18T12:00:00.000Z');
+    const end = new Date('2027-10-18T11:00:00.000Z');
+    expect(daysBetween(start, end)).toEqual(30);
+  });
+  it('counts 31 days when the clocks go back during the period', () => {
+    const start = new Date('2027-03-18T11:00:00.000Z');
+    const end = new Date('2027-04-18T12:00:00.000Z');
+    expect(daysBetween(start, end)).toEqual(31);
+  });
+});
