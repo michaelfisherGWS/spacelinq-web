@@ -443,6 +443,9 @@ export const loadData = (params, search, config) => (dispatch, getState, sdk) =>
         'publicData.transactionProcessAlias',
         'publicData.unitType',
         'publicData.cardStyle',
+        // SpaceLinq: cards need the storage option picture and the provider's own pricing
+        'publicData.storageUnit',
+        'publicData.pricing',
         // These help rendering of 'purchase' listings,
         // when transitioning from search page to listing page
         'publicData.pickupEnabled',

@@ -63,6 +63,9 @@ const fetchFeaturedListingsPayloadCreator = async (arg, thunkAPI) => {
           'publicData.transactionProcessAlias',
           'publicData.unitType',
           'publicData.cardStyle',
+          // SpaceLinq: cards need the storage option picture and the provider's own pricing
+          'publicData.storageUnit',
+          'publicData.pricing',
           'publicData.pickupEnabled',
           'publicData.shippingEnabled',
           'publicData.priceVariationsEnabled',
