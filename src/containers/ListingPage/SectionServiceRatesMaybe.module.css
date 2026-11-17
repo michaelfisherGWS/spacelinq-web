@@ -1,0 +1,51 @@
+@import '../../styles/customMediaQueries.css';
+
+.root {
+  padding: 0 24px;
+  margin-bottom: 36px;
+
+  @media (--viewportMedium) {
+    padding: 0;
+    margin-bottom: 40px;
+  }
+}
+
+.heading {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.group {
+  margin-bottom: 18px;
+}
+
+.groupTitle {
+  composes: h5 from global;
+  margin: 0 0 6px 0;
+  color: var(--colorGrey700);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--colorGrey100);
+}
+
+.price {
+  white-space: nowrap;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.note {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey500);
+  margin: 6px 0 0 0;
+}

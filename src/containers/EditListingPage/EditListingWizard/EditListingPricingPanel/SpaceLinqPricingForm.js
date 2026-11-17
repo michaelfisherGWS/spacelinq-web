@@ -11,6 +11,7 @@ import {
   pricingModels,
   defaultPricingModelForListingType,
   addOns as addOnOptions,
+  serviceRates as serviceRateOptions,
 } from '../../../../config/configSpaceLinq';
 import { toDailyRate, toMonthlyRate } from '../../../../util/spacelinqPricing';
 
@@ -42,7 +43,13 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
   const pricing = publicData?.pricing || {};
   const listingType = publicData?.listingType;
   const addOns = pricing.addOns || [];
+  const rateCard = pricing.rateCard || [];
   return {
+    rateKeys: rateCard.map(r => r.key),
+    ...rateCard.reduce((acc, r) => {
+      acc[`ratePrice_${r.key}`] = minorToMoney(r.price, currency);
+      return acc;
+    }, {}),
     model: pricing.model || defaultPricingModelForListingType[listingType] || 'fixed-monthly',
     rate: minorToMoney(pricing.rate, currency),
     cycle: pricing.cycle || 'month',
@@ -66,7 +73,10 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
  * @returns {Object} { price, publicData }
  */
 export const spaceLinqPricingToUpdateValues = (values, currency) => {
-  const { model, cycle: rawCycle, minTermMonths, addOnKeys = [] } = values;
+  const { model, cycle: rawCycle, minTermMonths, addOnKeys = [], rateKeys = [] } = values;
+  const rateCard = rateKeys
+    .map(key => ({ key, price: moneyToMinor(values[`ratePrice_${key}`]) }))
+    .filter(r => Number.isInteger(r.price) && r.price > 0);
   const cycle = model === 'per-pallet' ? rawCycle || 'week' : 'month';
   const rate = moneyToMinor(values.rate);
   const addOns = addOnKeys
@@ -82,6 +92,7 @@ export const spaceLinqPricingToUpdateValues = (values, currency) => {
     minMonthlySpend: moneyToMinor(values.minMonthlySpend),
     indicativeMax: model === 'quote' ? moneyToMinor(values.indicativeMax) : null,
     addOns,
+    rateCard,
   };
 
   // Quotes show an indicative monthly "from" price; bookable models use the daily rate.
@@ -250,6 +261,42 @@ const SpaceLinqPricingForm = props => {
                       name={`addOnPrice_${a.key}`}
                       className={css.addOnPrice}
                       label={intl.formatMessage({ id: 'SpaceLinqPricingForm.addOnPrice' })}
+                      currencyConfig={currencyConfig}
+                      validate={required(
+                        intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
+                      )}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <h3 className={css.sectionHeading}>
+              <FormattedMessage id="SpaceLinqPricingForm.rateCardHeading" />
+            </h3>
+            <p className={css.hint}>
+              <FormattedMessage id="SpaceLinqPricingForm.rateCardHelp" />
+            </p>
+            {serviceRateOptions.map(r => {
+              const enabled = (values.rateKeys || []).includes(r.key);
+              return (
+                <div key={r.key} className={css.addOn}>
+                  <FieldCheckbox
+                    id={`${formId}.rate.${r.key}`}
+                    name="rateKeys"
+                    value={r.key}
+                    label={r.label}
+                  />
+                  {enabled ? (
+                    <FieldCurrencyInput
+                      placeholder="0.00"
+                      id={`${formId}.ratePrice_${r.key}`}
+                      name={`ratePrice_${r.key}`}
+                      className={css.addOnPrice}
+                      label={intl.formatMessage(
+                        { id: 'SpaceLinqPricingForm.ratePrice' },
+                        { unit: r.unit }
+                      )}
                       currencyConfig={currencyConfig}
                       validate={required(
                         intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })

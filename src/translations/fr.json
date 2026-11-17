@@ -1591,5 +1591,11 @@
   "EditListingWizard.tabLabelStorageOption": "Option de stockage",
   "BookingDatesForm.minTermError": "La durée minimale pour cet espace est de {days} jours. Choisissez une date de fin plus tardive.",
   "EditListingStylePanel.storageOptionTitle": "Option de stockage pour {listingTitle}",
-  "EditListingStylePanel.storageOptionCreateTitle": "Option de stockage"
+  "EditListingStylePanel.storageOptionCreateTitle": "Option de stockage",
+  "SpaceLinqPricingForm.rateCardHeading": "Tarifs des services",
+  "SpaceLinqPricingForm.rateCardHelp": "Cochez les services que vous facturez et indiquez votre tarif. Les clients les voient sur votre annonce.",
+  "SpaceLinqPricingForm.ratePrice": "Tarif (par {unit})",
+  "ListingPage.serviceRatesTitle": "Tarifs des services",
+  "ListingPage.serviceRate": "{price} par {unit}",
+  "ListingPage.serviceRatesNote": "Les services sont convenus avec le prestataire après la réservation."
 }

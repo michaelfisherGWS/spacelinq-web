@@ -200,3 +200,24 @@ export const addOns = [
   { key: 'wms', label: 'WMS / inventory management' },
   { key: 'dock-handling', label: 'Dock / loading handling' },
 ];
+
+/**
+ * Service rate card. Providers tick the 3PL services they charge for and enter a rate.
+ * Rates are shown on the listing so customers can compare. They are information only
+ * until activity billing is built.
+ * - unit: what the rate is charged per.
+ */
+export const serviceRates = [
+  { key: 'receiving-pallet', group: 'Inbound', label: 'Receiving and put-away', unit: 'pallet' },
+  { key: 'devan-20', group: 'Inbound', label: 'Container devanning, 20 ft', unit: 'container' },
+  { key: 'devan-40', group: 'Inbound', label: 'Container devanning, 40 ft', unit: 'container' },
+  { key: 'palletising', group: 'Inbound', label: 'Palletising and wrapping', unit: 'pallet' },
+  { key: 'pallet-out', group: 'Outbound', label: 'Full pallet dispatch', unit: 'pallet' },
+  { key: 'carton-pick', group: 'Outbound', label: 'Carton pick', unit: 'carton' },
+  { key: 'order-pick-pack', group: 'Outbound', label: 'Pick and pack, first item', unit: 'order' },
+  { key: 'extra-item', group: 'Outbound', label: 'Pick and pack, extra item', unit: 'item' },
+  { key: 'cross-dock', group: 'Outbound', label: 'Cross-docking', unit: 'pallet' },
+  { key: 'labelling', group: 'Value-added', label: 'Labelling or relabelling', unit: 'unit' },
+  { key: 'returns', group: 'Value-added', label: 'Returns processing', unit: 'item' },
+  { key: 'labour-hour', group: 'Value-added', label: 'Labour for other work', unit: 'hour' },
+];
