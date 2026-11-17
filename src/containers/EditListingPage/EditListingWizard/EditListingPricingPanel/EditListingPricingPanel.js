@@ -14,6 +14,11 @@ import { H3, ListingLink } from '../../../../components';
 
 // Import modules from this directory
 import EditListingPricingForm from './EditListingPricingForm';
+import SpaceLinqPricingForm, {
+  getSpaceLinqPricingInitialValues,
+  spaceLinqPricingToUpdateValues,
+} from './SpaceLinqPricingForm';
+import { isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
 import {
   getInitialValuesForPriceVariants,
   handleSubmitValuesForPriceVariants,
@@ -158,7 +163,20 @@ const EditListingPricingPanel = props => {
       <H3 as="h1">
         <FormattedMessage id={panelHeadingProps.id} values={{ ...panelHeadingProps.values }} />
       </H3>
-      {priceCurrencyValid ? (
+      {priceCurrencyValid && isSpaceLinqListingType(publicData?.listingType) ? (
+        <SpaceLinqPricingForm
+          className={css.form}
+          initialValues={getSpaceLinqPricingInitialValues(publicData, marketplaceCurrency)}
+          onSubmit={values => onSubmit(spaceLinqPricingToUpdateValues(values, marketplaceCurrency))}
+          marketplaceCurrency={marketplaceCurrency}
+          saveActionMsg={submitButtonText}
+          disabled={disabled}
+          ready={ready}
+          updated={panelUpdated}
+          updateInProgress={updateInProgress}
+          fetchErrors={errors}
+        />
+      ) : priceCurrencyValid ? (
         <EditListingPricingForm
           className={css.form}
           initialValues={initialValues}

@@ -1,4 +1,5 @@
 import { subUnitDivisors } from '../config/settingsCurrency';
+import { isSpaceLinqListingType } from '../config/configSpaceLinq';
 import { getSupportedProcessesInfo, isBookingProcessAlias } from '../transactions/transaction';
 import { sanitizeText } from './sanitize';
 import { EXTENDED_DATA_SCHEMA_TYPES } from './types';
@@ -1116,6 +1117,10 @@ export const requireListingFiles = listingTypeConfig => {
 };
 
 export const requireListingImage = listingTypeConfig => {
+  // SpaceLinq: listings use a standard storage option icon instead of photos.
+  if (isSpaceLinqListingType(listingTypeConfig?.listingType)) {
+    return false;
+  }
   return listingTypeConfig?.defaultListingFields?.images !== false;
 };
 

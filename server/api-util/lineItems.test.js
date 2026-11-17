@@ -777,3 +777,24 @@ describe('transactionLineItems', () => {
     });
   });
 });
+
+describe('SpaceLinq add-on line items', () => {
+  const { getSpaceLinqAddOnLineItems } = require('./lineItems');
+  const publicData = {
+    pricing: {
+      addOns: [{ key: 'wms', price: 5000 }, { key: 'access-24-7', price: 2000 }],
+    },
+  };
+
+  it('adds selected add-ons pro-rata for the booked days', () => {
+    const items = getSpaceLinqAddOnLineItems(publicData, { addOns: ['wms'] }, 365 / 12, 'NZD');
+    expect(items).toHaveLength(1);
+    expect(items[0].code).toEqual('line-item/addon-wms');
+    expect(items[0].unitPrice.amount).toEqual(5000);
+  });
+
+  it('ignores add-ons the provider does not offer', () => {
+    const items = getSpaceLinqAddOnLineItems(publicData, { addOns: ['dock-handling'] }, 30, 'NZD');
+    expect(items).toHaveLength(0);
+  });
+});

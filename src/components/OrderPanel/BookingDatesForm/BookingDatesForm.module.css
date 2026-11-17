@@ -86,3 +86,38 @@
     margin: 24px 0;
   }
 }
+
+/* SpaceLinq: optional services */
+.addOns {
+  border: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+}
+
+.addOnsLegend {
+  font-weight: var(--fontWeightSemiBold);
+  font-size: 14px;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.addOn {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.seatsHint {
+  font-size: 13px;
+  color: var(--colorGrey500);
+  margin: 4px 0 0 0;
+}
+
+.seatsError {
+  font-size: 13px;
+  color: var(--colorFail);
+  margin: 4px 0 0 0;
+}

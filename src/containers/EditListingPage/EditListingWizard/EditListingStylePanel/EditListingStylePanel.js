@@ -10,6 +10,11 @@ import { H3, H5, ListingLink } from '../../../../components';
 
 // Import modules from this directory
 import EditListingStyleForm from './EditListingStyleForm';
+import EditListingStorageUnitForm, {
+  storageUnitFormValuesToPublicData,
+  storageUnitInitialValues,
+} from './EditListingStorageUnitForm';
+import { isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
 import css from './EditListingStylePanel.module.css';
 
 import { colorSchemes } from '../../../../util/types';
@@ -39,6 +44,9 @@ const EditListingStylePanel = props => {
     filesRequired,
   } = props;
 
+  const listingType = listing?.attributes?.publicData?.listingType;
+  const isSpaceLinq = isSpaceLinqListingType(listingType);
+
   const rootClass = rootClassName || css.root;
   const classes = classNames(rootClass, className);
   const isPublished = listing?.id && listing?.attributes?.state !== LISTING_STATE_DRAFT;
@@ -66,35 +74,61 @@ const EditListingStylePanel = props => {
       <H3 as="h1">
         <FormattedMessage id={panelHeadingProps.id} values={{ ...panelHeadingProps.values }} />
       </H3>
-      <span className={css.helpText}>
-        <FormattedMessage id="EditListingStyleForm.helpText" />
-      </span>
-      <H5 as="h2" className={css.chooseStyleHeading}>
-        <FormattedMessage id="EditListingStyleForm.title" />
-      </H5>
-      <EditListingStyleForm
-        className={css.form}
-        disabled={disabled}
-        ready={ready}
-        fetchErrors={errors}
-        initialValues={getInitialValues(props)}
-        onSubmit={values => {
-          const { cardStyle } = values;
-          const updateValues = {
-            publicData: {
-              cardStyle: cardStyle,
-            },
-          };
-          onSubmit(updateValues);
-        }}
-        saveActionMsg={submitButtonText}
-        updated={panelUpdated}
-        updateInProgress={updateInProgress}
-        listingTitle={listing.attributes.title}
-        allFilesUploadedAndVerified={allFilesUploadedAndVerified}
-        filesTabParams={filesTabParams}
-        filesRequired={filesRequired}
-      />
+      {isSpaceLinq ? (
+        <>
+          <span className={css.helpText}>
+            <FormattedMessage id="EditListingStorageUnitForm.helpText" />
+          </span>
+          <EditListingStorageUnitForm
+            className={css.form}
+            listingType={listingType}
+            disabled={disabled}
+            ready={ready}
+            fetchErrors={errors}
+            initialValues={storageUnitInitialValues(listing.attributes.publicData)}
+            onSubmit={values => onSubmit({ publicData: storageUnitFormValuesToPublicData(values) })}
+            saveActionMsg={submitButtonText}
+            updated={panelUpdated}
+            updateInProgress={updateInProgress}
+            listingTitle={listing.attributes.title}
+            allFilesUploadedAndVerified={allFilesUploadedAndVerified}
+            filesTabParams={filesTabParams}
+            filesRequired={filesRequired}
+          />
+        </>
+      ) : (
+        <>
+          <span className={css.helpText}>
+            <FormattedMessage id="EditListingStyleForm.helpText" />
+          </span>
+          <H5 as="h2" className={css.chooseStyleHeading}>
+            <FormattedMessage id="EditListingStyleForm.title" />
+          </H5>
+          <EditListingStyleForm
+            className={css.form}
+            disabled={disabled}
+            ready={ready}
+            fetchErrors={errors}
+            initialValues={getInitialValues(props)}
+            onSubmit={values => {
+              const { cardStyle } = values;
+              const updateValues = {
+                publicData: {
+                  cardStyle: cardStyle,
+                },
+              };
+              onSubmit(updateValues);
+            }}
+            saveActionMsg={submitButtonText}
+            updated={panelUpdated}
+            updateInProgress={updateInProgress}
+            listingTitle={listing.attributes.title}
+            allFilesUploadedAndVerified={allFilesUploadedAndVerified}
+            filesTabParams={filesTabParams}
+            filesRequired={filesRequired}
+          />
+        </>
+      )}
     </main>
   );
 };

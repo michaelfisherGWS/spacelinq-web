@@ -143,6 +143,36 @@ const getDateRangeQuantityAndLineItems = (orderData, code) => {
  * @param {Object} customerCommission
  * @returns {Array} lineItems
  */
+// SpaceLinq: average days per month, used to pro-rata monthly add-on prices.
+const DAYS_PER_MONTH = 365 / 12;
+
+/**
+ * SpaceLinq: line items for optional monthly services (add-ons) chosen by the customer.
+ * Each add-on has a flat monthly price set by the provider, charged pro-rata for the booking.
+ *
+ * @param {Object} publicData listing public data (pricing.addOns: [{ key, price }])
+ * @param {Object} orderData order data (addOns: [key])
+ * @param {number} days booking length in days
+ * @param {string} currency
+ * @returns {Array} line items
+ */
+const getSpaceLinqAddOnLineItems = (publicData, orderData, days, currency) => {
+  const offered = publicData?.pricing?.addOns || [];
+  const selected = Array.isArray(orderData?.addOns) ? orderData.addOns : [];
+  if (!days || offered.length === 0 || selected.length === 0) {
+    return [];
+  }
+  return offered
+    .filter(a => selected.includes(a.key) && Number.isInteger(a.price) && a.price > 0)
+    .map(a => ({
+      code: `line-item/addon-${a.key}`,
+      unitPrice: new Money(Math.round((a.price * days) / DAYS_PER_MONTH), currency),
+      quantity: 1,
+      includeFor: ['customer', 'provider'],
+    }));
+};
+exports.getSpaceLinqAddOnLineItems = getSpaceLinqAddOnLineItems;
+
 exports.transactionLineItems = (listing, orderData, providerCommission, customerCommission) => {
   const publicData = listing.attributes.publicData;
   // Note: the unitType needs to be one of the following:
@@ -239,9 +269,14 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
 
   // Let's keep the base price (order) as first line item and provider and customer commissions as last.
   // Note: the order matters only if OrderBreakdown component doesn't recognize line-item.
+  // SpaceLinq: optional services, pro-rata for the number of booked days.
+  const bookedDays = ['day', 'night'].includes(unitType) ? units || quantity : null;
+  const addOnLineItems = getSpaceLinqAddOnLineItems(publicData, orderData, bookedDays, currency);
+
   const lineItems = [
     order,
     ...extraLineItems,
+    ...addOnLineItems,
     ...getProviderCommissionMaybe(providerCommission, order, currency),
     ...getCustomerCommissionMaybe(customerCommission, order, currency),
   ];

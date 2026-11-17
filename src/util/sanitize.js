@@ -188,6 +188,7 @@ const sanitizeConfiguredPublicData = (publicData, config = {}) => {
       'unitType',
       'userType',
       'cardStyle',
+      'storageUnit',
     ];
     const sanitizedValue = knownKeysWithString.includes(key)
       ? sanitizeText(value)

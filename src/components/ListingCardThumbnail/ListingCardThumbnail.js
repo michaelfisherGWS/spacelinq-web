@@ -1,7 +1,8 @@
 import React from 'react';
 import classNames from 'classnames';
 
-import { AspectRatioWrapper } from '../../components';
+import { AspectRatioWrapper, StorageUnitIcon } from '../../components';
+import { getStorageUnit } from '../../config/configSpaceLinq';
 import { colorSchemes } from '../../util/types';
 import { richText } from '../../util/richText';
 
@@ -21,10 +22,12 @@ const MIN_LENGTH_FOR_LONG_WORDS = 30;
  * @param {number} props.height aspect ratio height
  * @param {Function?} props.setActivePropsMaybe optional hover handlers for map highlighting
  * @param {string?} props.className optional CSS class for outer wrapper
+ * @param {string?} props.storageUnit SpaceLinq storage option key; shows its icon and label
  * @returns {JSX.Element} component to display when no listing image is available
  */
 const ListingCardThumbnail = props => {
-  const { style, listingTitle, width, height, setActivePropsMaybe, className } = props;
+  const { style, listingTitle, width, height, setActivePropsMaybe, className, storageUnit } = props;
+  const unit = getStorageUnit(storageUnit);
 
   // Validate the provided style against the allowed color schemes.
   // Fallback to the first scheme if invalid or undefined.
@@ -40,7 +43,13 @@ const ListingCardThumbnail = props => {
       {...setActivePropsMaybe}
       className={className}
     >
-      <div className={previewClassNames}>
+      <div className={classNames(previewClassNames, { [css.withStorageUnit]: !!unit })}>
+        {unit ? (
+          <div className={css.storageUnit}>
+            <StorageUnitIcon icon={unit.icon} className={css.storageUnitIcon} />
+            <span className={css.storageUnitLabel}>{unit.label}</span>
+          </div>
+        ) : null}
         {listingTitle
           ? richText(listingTitle, {
               longWordMinLength: MIN_LENGTH_FOR_LONG_WORDS,

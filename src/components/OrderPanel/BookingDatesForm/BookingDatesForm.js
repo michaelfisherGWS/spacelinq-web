@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form as FinalForm } from 'react-final-form';
+import { Form as FinalForm, Field } from 'react-final-form';
 import classNames from 'classnames';
 
 import appSettings from '../../../config/settings';
@@ -18,6 +18,9 @@ import {
   stringifyDateToISO8601,
 } from '../../../util/dates';
 import { LINE_ITEM_DAY, propTypes } from '../../../util/types';
+import { formatMoney } from '../../../util/currency';
+import { types as sdkTypes } from '../../../util/sdkLoader';
+import { addOns as spaceLinqAddOnConfig } from '../../../config/configSpaceLinq';
 import { timeSlotsPerDate } from '../../../util/generators';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 
@@ -345,7 +348,7 @@ const calculateLineItems = (
   onFetchTransactionLineItems,
   seatsEnabled
 ) => formValues => {
-  const { startDate, endDate, priceVariantName, seats } = formValues?.values || {};
+  const { startDate, endDate, priceVariantName, seats, addOns } = formValues?.values || {};
 
   const priceVariantMaybe = priceVariantName ? { priceVariantName } : {};
   const seatCount = seats ? parseInt(seats, 10) : 1;
@@ -355,6 +358,8 @@ const calculateLineItems = (
     bookingEnd: endDate,
     ...priceVariantMaybe,
     ...(seatsEnabled && { seats: seatCount }),
+    // SpaceLinq: optional services
+    ...(Array.isArray(addOns) && addOns.length ? { addOns } : {}),
   };
 
   if (startDate && endDate && !fetchLineItemsInProgress) {
@@ -417,6 +422,9 @@ const findMinSeatsTimeSlot = timeSlots => {
   }, null);
 };
 
+// SpaceLinq: above this many units, the quantity is typed rather than picked from a list
+const SEATS_DROPDOWN_LIMIT = 50;
+
 // Main function to get the seat options based on the minimum seats available in the date range
 const getMinSeatsOptions = (allTimeSlots, startDate, endDate) => {
   if (!startDate || !endDate) {
@@ -425,8 +433,10 @@ const getMinSeatsOptions = (allTimeSlots, startDate, endDate) => {
   const filteredTimeSlots = filterTimeSlotsByDate(allTimeSlots, startDate, endDate);
   const minSeatsSlot = findMinSeatsTimeSlot(filteredTimeSlots);
 
-  // Return the array of seat options from 1 to the minimum seats available, capped at 100
-  const maxOptions = 100;
+  // Return the array of seat options from 1 to the minimum seats available.
+  // SpaceLinq: capacity can be hundreds of pallets or m², so the cap is raised;
+  // large capacities are entered in a number box instead of a dropdown.
+  const maxOptions = 5000;
   return minSeatsSlot
     ? Array.from({ length: Math.min(minSeatsSlot.seats, maxOptions) }, (_, i) => i + 1)
     : [];
@@ -537,6 +547,7 @@ export const BookingDatesForm = props => {
     priceVariantFieldComponent: PriceVariantFieldComponent,
     preselectedPriceVariant,
     isPublishedListing,
+    addOnOptions = [],
     ...rest
   } = props;
   const intl = useIntl();
@@ -625,6 +636,9 @@ export const BookingDatesForm = props => {
         } = formRenderProps;
         const { startDate, endDate } = values?.bookingDates ? values.bookingDates : {};
         const priceVariantName = values?.priceVariantName || null;
+        // SpaceLinq: keep chosen add-ons in every line item estimate
+        const fetchLineItems = fv =>
+          onHandleFetchLineItems({ values: { addOns: values?.addOns, ...fv.values } });
 
         const startDateErrorMessage = intl.formatMessage({
           id: 'FieldDateRangeInput.invalidStartDate',
@@ -786,7 +800,7 @@ export const BookingDatesForm = props => {
                 if (seatsEnabled) {
                   formApi.change('seats', 1);
                 }
-                onHandleFetchLineItems({
+                fetchLineItems({
                   values: {
                     priceVariantName,
                     startDate,
@@ -797,7 +811,54 @@ export const BookingDatesForm = props => {
               }}
             />
 
-            {seatsEnabled ? (
+            {seatsEnabled && seatsOptions.length > SEATS_DROPDOWN_LIMIT ? (
+              <Field
+                name="seats"
+                validate={value => {
+                  const n = Number(value);
+                  return n >= 1 && n <= seatsOptions.length
+                    ? undefined
+                    : intl.formatMessage(
+                        { id: 'BookingDatesForm.seatsOutOfRange' },
+                        { max: seatsOptions.length }
+                      );
+                }}
+              >
+                {({ input, meta }) => (
+                  <div className={css.fieldSeats}>
+                    <label htmlFor="seats">
+                      {intl.formatMessage({ id: 'BookingDatesForm.seatsTitle' })}
+                    </label>
+                    <input
+                      {...input}
+                      id="seats"
+                      type="number"
+                      min="1"
+                      max={seatsOptions.length}
+                      disabled={!(startDate && endDate)}
+                      onChange={e => {
+                        input.onChange(e);
+                        const n = Number(e.target.value);
+                        if (n >= 1 && n <= seatsOptions.length) {
+                          fetchLineItems({
+                            values: { priceVariantName, startDate, endDate, seats: n },
+                          });
+                        }
+                      }}
+                    />
+                    <p className={css.seatsHint}>
+                      {intl.formatMessage(
+                        { id: 'BookingDatesForm.seatsAvailable' },
+                        { max: seatsOptions.length }
+                      )}
+                    </p>
+                    {meta.touched && meta.error ? (
+                      <p className={css.seatsError}>{meta.error}</p>
+                    ) : null}
+                  </div>
+                )}
+              </Field>
+            ) : seatsEnabled ? (
               <FieldSelect
                 name="seats"
                 id="seats"
@@ -806,7 +867,7 @@ export const BookingDatesForm = props => {
                 showLabelAsDisabled={!(startDate && endDate)}
                 className={css.fieldSeats}
                 onChange={values => {
-                  onHandleFetchLineItems({
+                  fetchLineItems({
                     values: {
                       priceVariantName,
                       startDate: startDate,
@@ -825,6 +886,51 @@ export const BookingDatesForm = props => {
                   </option>
                 ))}
               </FieldSelect>
+            ) : null}
+
+            {addOnOptions.length > 0 ? (
+              <fieldset className={css.addOns}>
+                <legend className={css.addOnsLegend}>
+                  <FormattedMessage id="BookingDatesForm.addOnsTitle" />
+                </legend>
+                {addOnOptions.map(a => {
+                  const label = spaceLinqAddOnConfig.find(c => c.key === a.key)?.label || a.key;
+                  const price = formatMoney(intl, new sdkTypes.Money(a.price, unitPrice.currency));
+                  return (
+                    <Field key={a.key} name="addOns" type="checkbox" value={a.key}>
+                      {({ input }) => (
+                        <label className={css.addOn}>
+                          <input
+                            {...input}
+                            onChange={e => {
+                              input.onChange(e);
+                              const current = values?.addOns || [];
+                              const next = e.target.checked
+                                ? [...current, a.key]
+                                : current.filter(k => k !== a.key);
+                              fetchLineItems({
+                                values: {
+                                  priceVariantName,
+                                  startDate,
+                                  endDate,
+                                  seats: values?.seats,
+                                  addOns: next,
+                                },
+                              });
+                            }}
+                          />
+                          <span>
+                            <FormattedMessage
+                              id="BookingDatesForm.addOnLabel"
+                              values={{ label, price }}
+                            />
+                          </span>
+                        </label>
+                      )}
+                    </Field>
+                  );
+                })}
+              </fieldset>
             ) : null}
 
             {showEstimatedBreakdown ? (

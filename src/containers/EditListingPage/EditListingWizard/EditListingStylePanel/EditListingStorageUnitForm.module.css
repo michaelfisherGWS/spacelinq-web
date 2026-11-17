@@ -1,0 +1,128 @@
+@import '../../../../styles/customMediaQueries.css';
+
+.root {
+  display: flex;
+  flex-direction: column;
+}
+
+.options {
+  border: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+
+  @media (--viewportMedium) {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+.legend {
+  composes: h5 from global;
+  margin: 0 0 12px 0;
+  padding: 0;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--colorGrey100);
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorWhite);
+  cursor: pointer;
+  transition: border-color var(--transitionStyleButton);
+
+  &:hover {
+    border-color: var(--colorGrey300);
+  }
+}
+
+.optionSelected {
+  border-color: var(--marketplaceColor);
+  box-shadow: 0 0 0 1px var(--marketplaceColor);
+}
+
+.optionInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+
+  &:focus-visible + .optionIcon {
+    outline: 2px solid var(--marketplaceColor);
+  }
+}
+
+.optionIcon {
+  grid-row: 1 / span 2;
+  width: 48px;
+  height: 48px;
+  color: var(--colorGrey700);
+}
+
+.optionLabel {
+  font-weight: var(--fontWeightSemiBold);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.optionDescription {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey500);
+}
+
+.dimensionsHeading,
+.previewHeading {
+  margin: 12px 0 6px 0;
+}
+
+.help {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey500);
+  margin: 0 0 12px 0;
+}
+
+.dimensions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+
+  @media (--viewportMedium) {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+.dimensionField {
+  margin: 0;
+}
+
+.preview {
+  max-width: 366px;
+  margin-bottom: 24px;
+}
+
+.submitSection {
+  margin-top: 24px;
+}
+
+.error {
+  color: var(--colorFail);
+}
+
+.submitButton {
+  margin-bottom: 24px;
+
+  @media (--viewportLarge) {
+    display: inline-block;
+    width: 241px;
+  }
+}

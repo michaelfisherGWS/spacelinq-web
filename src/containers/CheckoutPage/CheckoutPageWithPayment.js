@@ -132,6 +132,9 @@ const getOrderParams = (
   const quantityMaybe = quantity ? { quantity } : {};
   const seats = pageData.orderData?.seats;
   const seatsMaybe = seats ? { seats } : {};
+  // SpaceLinq: optional services chosen on the listing page
+  const addOns = pageData.orderData?.addOns;
+  const addOnsMaybe = Array.isArray(addOns) && addOns.length ? { addOns } : {};
   const deliveryMethod = pageData.orderData?.deliveryMethod;
   const deliveryMethodMaybe = deliveryMethod ? { deliveryMethod } : {};
   const { listingType, unitType, priceVariants } = pageData?.listing?.attributes?.publicData || {};
@@ -162,6 +165,7 @@ const getOrderParams = (
       ...priceVariantMaybe,
       ...transactionFieldProtectedData,
       ...customerDefaultMessageMaybe,
+      ...addOnsMaybe,
     },
   };
 
@@ -186,6 +190,7 @@ const getOrderParams = (
     ...seatsMaybe,
     ...bookingDatesMaybe(pageData.orderData?.bookingDates),
     ...priceVariantNameMaybe,
+    ...addOnsMaybe,
     ...protectedDataMaybe,
     ...pushPaymentMaybe,
     ...optionalPaymentParams,

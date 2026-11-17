@@ -50,3 +50,27 @@
   word-break: break-word;
   hyphens: auto;
 }
+
+/* SpaceLinq: storage option icon above the title */
+.withStorageUnit {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.storageUnit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.storageUnitIcon {
+  width: 64px;
+  height: 64px;
+}
+
+.storageUnitLabel {
+  font-size: 13px;
+  font-weight: var(--fontWeightMedium);
+  opacity: 0.8;
+}

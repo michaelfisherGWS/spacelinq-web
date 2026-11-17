@@ -23,6 +23,8 @@ import {
   LISTING_STATE_PUBLISHED,
 } from '../../util/types';
 import { formatMoney } from '../../util/currency';
+import { types as sdkTypes } from '../../util/sdkLoader';
+import { getSpaceLinqDisplayPrice } from '../../util/spacelinqPricing';
 import { createSlug, parse, stringify } from '../../util/urlHelpers';
 import { userDisplayNameAsString } from '../../util/data';
 import {
@@ -160,14 +162,27 @@ const PriceMaybe = props => {
     return null;
   }
 
+  // SpaceLinq: show the provider's own pricing (e.g. per pallet / week) instead of the daily rate
+  const spaceLinqPrice = getSpaceLinqDisplayPrice(publicData);
+  const displayedPrice = spaceLinqPrice
+    ? new sdkTypes.Money(spaceLinqPrice.amount, price.currency)
+    : price;
+
   // Get formatted price or currency code if the currency does not match with marketplace currency
-  const { formattedPrice, priceTitle } = priceData(price, marketplaceCurrency, intl);
+  const { formattedPrice, priceTitle } = priceData(displayedPrice, marketplaceCurrency, intl);
   const priceValue = (
-    <span className={css.priceValue}>{formatMoneyIfSupportedCurrency(price, intl)}</span>
+    <span className={css.priceValue}>
+      {spaceLinqPrice?.isFrom ? 'From ' : ''}
+      {formatMoneyIfSupportedCurrency(displayedPrice, intl)}
+    </span>
   );
   const pricePerUnit = (
     <span className={css.perUnit}>
-      <FormattedMessage id="OrderPanel.perUnit" values={{ unitType }} />
+      {spaceLinqPrice ? (
+        spaceLinqPrice.perUnit
+      ) : (
+        <FormattedMessage id="OrderPanel.perUnit" values={{ unitType }} />
+      )}
     </span>
   );
 
@@ -532,6 +547,7 @@ const OrderPanel = props => {
             onFetchTimeSlots={onFetchTimeSlots}
             timeZone={timeZone}
             finePrintComponent={SubmitFinePrint}
+            addOnOptions={publicData?.pricing?.addOns || []}
             {...priceVariantsMaybe}
             {...sharedProps}
           />

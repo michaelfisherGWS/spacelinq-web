@@ -14,6 +14,12 @@ import { Button, H3, InlineTextButton, ListingLink, Modal } from '../../../../co
 import EditListingAvailabilityPlanForm from './EditListingAvailabilityPlanForm';
 import EditListingAvailabilityExceptionForm from './EditListingAvailabilityExceptionForm';
 import WeeklyCalendar from './WeeklyCalendar/WeeklyCalendar';
+import SpaceLinqAvailabilityForm, {
+  createSpaceLinqAvailabilityPlan,
+  capacityFromPlan,
+  SPACELINQ_DEFAULT_TIMEZONE,
+} from './SpaceLinqAvailabilityForm';
+import { isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
 
 import css from './EditListingAvailabilityPanel.module.css';
 
@@ -98,6 +104,11 @@ const createAvailabilityPlan = values => ({
     timezone: values.timezone,
     entries: createEntriesFromSubmitValues(values),
   },
+});
+
+// SpaceLinq: availability plan from the simple setup form
+const createAvailabilityPlanForSpaceLinq = (capacity, timezone) => ({
+  availabilityPlan: createSpaceLinqAvailabilityPlan(capacity, timezone),
 });
 
 //////////////////////////////////
@@ -229,6 +240,22 @@ const EditListingAvailabilityPanel = props => {
 
   const sortedAvailabilityExceptions = allExceptions;
 
+  // SpaceLinq: simple setup (capacity + access hours) generates the availability plan
+  const isSpaceLinq = isSpaceLinqListingType(listingType);
+  const [spaceLinqSaved, setSpaceLinqSaved] = useState(false);
+  const handleSpaceLinqSubmit = values => {
+    const capacity = useMultipleSeats ? Number(values.capacity) : 1;
+    const timezone = listingAttributes?.availabilityPlan?.timezone || SPACELINQ_DEFAULT_TIMEZONE;
+    return onSubmit({
+      ...createAvailabilityPlanForSpaceLinq(capacity, timezone),
+      publicData: { accessHours: values.accessHours || '' },
+    })
+      .then(() => setSpaceLinqSaved(true))
+      .catch(() => {
+        // errors are shown via props.errors
+      });
+  };
+
   // Save exception click handler
   const saveException = values => {
     const { availability, exceptionStartTime, exceptionEndTime, exceptionRange, seats } = values;
@@ -286,7 +313,21 @@ const EditListingAvailabilityPanel = props => {
         <FormattedMessage id={panelHeadingProps.id} values={{ ...panelHeadingProps.values }} />
       </H3>
 
-      <div className={css.planInfo}>
+      {isSpaceLinq ? (
+        <SpaceLinqAvailabilityForm
+          listingType={listingType}
+          pricingModel={listingAttributes?.publicData?.pricing?.model}
+          initialValues={{
+            capacity: capacityFromPlan(listingAttributes?.availabilityPlan) || '',
+            accessHours: listingAttributes?.publicData?.accessHours || '',
+          }}
+          onSubmit={handleSpaceLinqSubmit}
+          inProgress={updateInProgress}
+          saved={spaceLinqSaved}
+        />
+      ) : null}
+
+      <div className={classNames(css.planInfo, { [css.hidden]: isSpaceLinq })}>
         {!hasAvailabilityPlan ? (
           <p>
             <FormattedMessage id="EditListingAvailabilityPanel.availabilityPlanInfo" />

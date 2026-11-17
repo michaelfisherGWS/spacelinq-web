@@ -128,7 +128,7 @@ export const ListingCard = props => {
   const { title = '', publicData } = listing?.attributes || {};
   const slug = createSlug(title);
 
-  const { listingType, cardStyle } = publicData || {};
+  const { listingType, cardStyle, storageUnit } = publicData || {};
   const validListingTypes = config.listing.listingTypes || [];
   const foundListingTypeConfig = validListingTypes.find(conf => conf.listingType === listingType);
   // Render the listing image only if listing images are enabled in the listing type
@@ -170,6 +170,7 @@ export const ListingCard = props => {
       ) : (
         <ListingCardThumbnail
           style={cardStyle}
+          storageUnit={storageUnit}
           listingTitle={title}
           className={aspectRatioClassName}
           width={aspectWidth}

@@ -2,6 +2,8 @@ import { displayPrice, isPriceVariationsEnabled } from '../../util/configHelpers
 import { formatMoney } from '../../util/currency';
 import { richText } from '../../util/richText';
 import { isBookingProcessAlias } from '../../transactions/transaction';
+import { types as sdkTypes } from '../../util/sdkLoader';
+import { getSpaceLinqDisplayPrice } from '../../util/spacelinqPricing';
 
 import css from './ListingCard.module.css';
 
@@ -56,23 +58,31 @@ export const getListingCardTranslations = (listing, config, intl) => {
   const listingTypeConfig = validListingTypes.find(conf => conf.listingType === listingType);
 
   const showPrice = displayPrice(listingTypeConfig);
-  const { formattedPrice, priceTooltip } = priceData(price, config.currency, intl);
+  // SpaceLinq: show the provider's own pricing (e.g. per pallet / week) instead of the daily rate
+  const spaceLinqPrice = getSpaceLinqDisplayPrice(publicData);
+  const displayedPrice =
+    spaceLinqPrice && price ? new sdkTypes.Money(spaceLinqPrice.amount, price.currency) : price;
+  const { formattedPrice, priceTooltip } = priceData(displayedPrice, config.currency, intl);
 
   const isPriceVariationsInUse = isPriceVariationsEnabled(publicData, listingTypeConfig);
   const hasMultiplePriceVariants = isPriceVariationsInUse && publicData?.priceVariants?.length > 1;
   const isBookable = isBookingProcessAlias(publicData?.transactionProcessAlias);
 
-  const priceMessageId = hasMultiplePriceVariants
-    ? 'ListingCard.priceStartingFrom'
-    : 'ListingCard.price';
+  const priceMessageId =
+    hasMultiplePriceVariants || spaceLinqPrice?.isFrom
+      ? 'ListingCard.priceStartingFrom'
+      : 'ListingCard.price';
 
-  const perUnitString = isBookable
+  const perUnitString = spaceLinqPrice
+    ? spaceLinqPrice.perUnit
+    : isBookable
     ? intl.formatMessage({ id: 'ListingCard.perUnit' }, { unitType: publicData?.unitType })
     : '';
 
   // Visible price block uses JSX spans for styling; aria-label needs a plain string.
   const priceValue = <span className={css.priceValue}>{formattedPrice}</span>;
-  const pricePerUnit = isBookable ? <span className={css.perUnit}>{perUnitString}</span> : '';
+  const pricePerUnit =
+    isBookable || spaceLinqPrice ? <span className={css.perUnit}>{perUnitString}</span> : '';
   const priceMessage =
     showPrice && formattedPrice != null
       ? intl.formatMessage({ id: priceMessageId }, { priceValue, pricePerUnit })

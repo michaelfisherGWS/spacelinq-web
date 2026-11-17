@@ -1,0 +1,92 @@
+/**
+ * SpaceLinq pricing helpers.
+ *
+ * Providers set prices the way storage is sold (per pallet per week/month,
+ * per m² per month, fixed monthly). Sharetribe bookings use a daily unit, so
+ * the listing's `price` attribute is stored as the equivalent daily rate and
+ * the original pricing is kept in publicData.pricing for display.
+ *
+ * All money values are in minor units (cents).
+ */
+import { DAYS_PER_MONTH, DAYS_PER_WEEK } from '../config/configSpaceLinq';
+
+export const daysInCycle = cycle => (cycle === 'week' ? DAYS_PER_WEEK : DAYS_PER_MONTH);
+
+/**
+ * Convert a per-cycle rate to a daily rate.
+ *
+ * @param {number} rateMinor - rate in minor units for one cycle
+ * @param {'week'|'month'} cycle
+ * @returns {number} daily rate in minor units, rounded to the nearest cent
+ */
+export const toDailyRate = (rateMinor, cycle) => {
+  if (!Number.isFinite(rateMinor) || rateMinor <= 0) {
+    return 0;
+  }
+  return Math.round(rateMinor / daysInCycle(cycle));
+};
+
+/**
+ * Monthly equivalent of a per-cycle rate.
+ *
+ * @param {number} rateMinor
+ * @param {'week'|'month'} cycle
+ * @returns {number}
+ */
+export const toMonthlyRate = (rateMinor, cycle) =>
+  cycle === 'week' ? Math.round((rateMinor / DAYS_PER_WEEK) * DAYS_PER_MONTH) : rateMinor;
+
+/**
+ * Pro-rata amount of a monthly price for a number of days.
+ *
+ * @param {number} monthlyMinor
+ * @param {number} days
+ * @returns {number}
+ */
+export const proRataForDays = (monthlyMinor, days) => {
+  if (!Number.isFinite(monthlyMinor) || !Number.isFinite(days) || days <= 0) {
+    return 0;
+  }
+  return Math.round((monthlyMinor * days) / DAYS_PER_MONTH);
+};
+
+/**
+ * Estimated monthly total for a customer: base rate x units, plus add-ons.
+ *
+ * @param {Object} pricing - publicData.pricing
+ * @param {number} units - pallets / m² (1 for fixed monthly)
+ * @param {Array<string>} selectedAddOns - add-on keys
+ * @returns {number} monthly total in minor units
+ */
+export const estimateMonthlyTotal = (pricing, units = 1, selectedAddOns = []) => {
+  if (!pricing || pricing.model === 'quote') {
+    return 0;
+  }
+  const base = toMonthlyRate(pricing.rate || 0, pricing.cycle) * (units || 1);
+  const addOnTotal = (pricing.addOns || [])
+    .filter(a => selectedAddOns.includes(a.key))
+    .reduce((sum, a) => sum + (a.price || 0), 0);
+  return base + addOnTotal;
+};
+
+/**
+ * Price to show customers for a SpaceLinq listing, in the provider's own terms.
+ * Returns null when the listing has no SpaceLinq pricing.
+ *
+ * @param {Object} publicData - listing publicData
+ * @returns {{ amount: number, perUnit: string, isFrom: boolean }|null}
+ */
+export const getSpaceLinqDisplayPrice = publicData => {
+  const pricing = publicData?.pricing;
+  if (!pricing || !Number.isInteger(pricing.rate) || pricing.rate <= 0) {
+    return null;
+  }
+  const cycle = pricing.cycle === 'week' ? 'week' : 'month';
+  const perUnit =
+    pricing.model === 'per-pallet'
+      ? `per pallet / ${cycle}`
+      : pricing.model === 'per-m2'
+      ? 'per m² / month'
+      : 'per month';
+  return { amount: pricing.rate, perUnit, isFrom: pricing.model === 'quote' };
+};

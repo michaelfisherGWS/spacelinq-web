@@ -102,3 +102,8 @@
 .error {
   color: var(--colorFail);
 }
+
+/* SpaceLinq: weekly plan editor replaced by the simple setup form */
+.hidden {
+  display: none;
+}

@@ -1,0 +1,47 @@
+@import '../../styles/customMediaQueries.css';
+
+.root {
+  margin-bottom: 32px;
+
+  @media (--viewportMedium) {
+    margin-bottom: 40px;
+  }
+}
+
+.heading {
+  margin: 0 0 12px 0;
+}
+
+.unit {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--colorGrey100);
+  border-radius: var(--borderRadiusMedium);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  color: var(--colorGrey700);
+}
+
+.label {
+  font-weight: var(--fontWeightSemiBold);
+  margin: 0 0 4px 0;
+}
+
+.description {
+  margin: 0 0 8px 0;
+  color: var(--colorGrey700);
+}
+
+.specs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--colorGrey500);
+  font-size: 14px;
+}

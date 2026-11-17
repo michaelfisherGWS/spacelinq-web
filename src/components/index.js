@@ -12,6 +12,7 @@
 import loadable from '@loadable/component';
 
 // Icons
+export { default as StorageUnitIcon } from './StorageUnitIcon/StorageUnitIcon';
 export { default as IconAdd } from './IconAdd/IconAdd';
 export { default as IconAlert } from './IconAlert/IconAlert';
 export { default as IconArrow } from './IconArrow/IconArrow';
