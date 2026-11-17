@@ -44,7 +44,13 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
   const listingType = publicData?.listingType;
   const addOns = pricing.addOns || [];
   const rateCard = pricing.rateCard || [];
+  const insurance = pricing.insurance || null;
   return {
+    insuranceOffered: insurance ? ['yes'] : [],
+    insuranceRate: minorToMoney(insurance?.rate, currency),
+    insuranceDgRate: minorToMoney(insurance?.dgRate, currency),
+    insuranceMaxValue: minorToMoney(insurance?.maxValue, currency),
+    insuranceExclusions: insurance?.exclusions || '',
     rateKeys: rateCard.map(r => r.key),
     ...rateCard.reduce((acc, r) => {
       acc[`ratePrice_${r.key}`] = minorToMoney(r.price, currency);
@@ -83,6 +89,20 @@ export const spaceLinqPricingToUpdateValues = (values, currency) => {
     .map(key => ({ key, price: moneyToMinor(values[`addOnPrice_${key}`]) }))
     .filter(a => Number.isInteger(a.price) && a.price > 0);
 
+  // Goods insurance: a rate per $1,000 of goods per month, and the most the provider will cover
+  const insuranceRate = moneyToMinor(values.insuranceRate);
+  const insuranceMaxValue = moneyToMinor(values.insuranceMaxValue);
+  const insuranceDgRate = moneyToMinor(values.insuranceDgRate);
+  const insurance =
+    (values.insuranceOffered || []).includes('yes') && insuranceRate > 0 && insuranceMaxValue > 0
+      ? {
+          rate: insuranceRate,
+          dgRate: insuranceDgRate > 0 ? insuranceDgRate : null,
+          maxValue: insuranceMaxValue,
+          exclusions: `${values.insuranceExclusions || ''}`.trim().slice(0, 300),
+        }
+      : null;
+
   const pricing = {
     model,
     rate,
@@ -93,6 +113,7 @@ export const spaceLinqPricingToUpdateValues = (values, currency) => {
     indicativeMax: model === 'quote' ? moneyToMinor(values.indicativeMax) : null,
     addOns,
     rateCard,
+    insurance,
   };
 
   // Quotes show an indicative monthly "from" price; bookable models use the daily rate.
@@ -270,6 +291,63 @@ const SpaceLinqPricingForm = props => {
                 </div>
               );
             })}
+
+            <h3 className={css.sectionHeading}>
+              <FormattedMessage id="SpaceLinqPricingForm.insuranceHeading" />
+            </h3>
+            <p className={css.hint}>
+              <FormattedMessage id="SpaceLinqPricingForm.insuranceHelp" />
+            </p>
+            <div className={css.addOn}>
+              <FieldCheckbox
+                id={`${formId}.insuranceOffered`}
+                name="insuranceOffered"
+                value="yes"
+                label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceOffered' })}
+              />
+              {(values.insuranceOffered || []).includes('yes') ? (
+                <>
+                  <FieldCurrencyInput
+                    placeholder="0.00"
+                    id={`${formId}.insuranceRate`}
+                    name="insuranceRate"
+                    className={css.addOnPrice}
+                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceRate' })}
+                    currencyConfig={currencyConfig}
+                    validate={required(
+                      intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
+                    )}
+                  />
+                  <FieldCurrencyInput
+                    placeholder="0.00"
+                    id={`${formId}.insuranceDgRate`}
+                    name="insuranceDgRate"
+                    className={css.addOnPrice}
+                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceDgRate' })}
+                    currencyConfig={currencyConfig}
+                  />
+                  <FieldCurrencyInput
+                    placeholder="0.00"
+                    id={`${formId}.insuranceMaxValue`}
+                    name="insuranceMaxValue"
+                    className={css.addOnPrice}
+                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceMaxValue' })}
+                    currencyConfig={currencyConfig}
+                    validate={required(
+                      intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
+                    )}
+                  />
+                  <FieldTextInput
+                    type="text"
+                    id={`${formId}.insuranceExclusions`}
+                    name="insuranceExclusions"
+                    className={css.addOnPrice}
+                    maxLength={300}
+                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceExclusions' })}
+                  />
+                </>
+              ) : null}
+            </div>
 
             <h3 className={css.sectionHeading}>
               <FormattedMessage id="SpaceLinqPricingForm.rateCardHeading" />

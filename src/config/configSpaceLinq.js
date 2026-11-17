@@ -199,7 +199,6 @@ export const addOns = [
   { key: 'access-24-7', label: '24/7 access' },
   { key: 'wms', label: 'WMS / inventory management' },
   { key: 'dock-handling', label: 'Dock / loading handling' },
-  { key: 'goods-insurance', label: "Goods insurance (provider's cover)" },
   { key: 'stock-counts', label: 'Regular stock counts' },
   { key: 'pallet-hire', label: 'Pallet hire' },
 ];

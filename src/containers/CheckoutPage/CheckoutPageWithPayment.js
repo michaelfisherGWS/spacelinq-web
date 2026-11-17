@@ -139,6 +139,9 @@ const getOrderParams = (
   // SpaceLinq: ongoing booking billed monthly
   const agreement = pageData.orderData?.agreement;
   const agreementMaybe = agreement ? { agreement } : {};
+  // SpaceLinq: goods insurance on a declared value
+  const insurance = pageData.orderData?.insurance;
+  const insuranceMaybe = insurance ? { insurance } : {};
   const deliveryMethod = pageData.orderData?.deliveryMethod;
   const deliveryMethodMaybe = deliveryMethod ? { deliveryMethod } : {};
   const { listingType, unitType, priceVariants } = pageData?.listing?.attributes?.publicData || {};
@@ -171,6 +174,7 @@ const getOrderParams = (
       ...customerDefaultMessageMaybe,
       ...addOnsMaybe,
       ...agreementMaybe,
+      ...insuranceMaybe,
     },
   };
 
@@ -197,6 +201,7 @@ const getOrderParams = (
     ...priceVariantNameMaybe,
     ...addOnsMaybe,
     ...agreementMaybe,
+    ...insuranceMaybe,
     ...protectedDataMaybe,
     ...pushPaymentMaybe,
     ...optionalPaymentParams,

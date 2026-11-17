@@ -22,6 +22,11 @@ import { formatMoney } from '../../../util/currency';
 import { types as sdkTypes } from '../../../util/sdkLoader';
 import { addOns as spaceLinqAddOnConfig } from '../../../config/configSpaceLinq';
 import { ongoingAgreement } from '../../../util/spaceLinqBilling';
+import {
+  hasInsuranceOffer,
+  insuranceFromFormValues,
+  monthlyPremium,
+} from '../../../util/spaceLinqInsurance';
 import { timeSlotsPerDate } from '../../../util/generators';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 
@@ -350,8 +355,15 @@ const calculateLineItems = (
   seatsEnabled,
   timeZone
 ) => formValues => {
-  const { startDate, endDate: selectedEndDate, priceVariantName, seats, addOns, ongoing } =
-    formValues?.values || {};
+  const {
+    startDate,
+    endDate: selectedEndDate,
+    priceVariantName,
+    seats,
+    addOns,
+    ongoing,
+    insurance,
+  } = formValues?.values || {};
   // SpaceLinq: an ongoing booking is billed monthly, so the estimate is for the first month.
   const agreement = ongoing && startDate ? ongoingAgreement(startDate, timeZone) : null;
   const endDate = agreement ? agreement.firstPeriodEnd : selectedEndDate;
@@ -367,6 +379,8 @@ const calculateLineItems = (
     // SpaceLinq: optional services
     ...(Array.isArray(addOns) && addOns.length ? { addOns } : {}),
     ...(agreement ? { agreement: { start: agreement.start, end: agreement.end } } : {}),
+    // SpaceLinq: goods insurance on the declared value
+    ...(insurance ? { insurance } : {}),
   };
 
   if (startDate && endDate && !fetchLineItemsInProgress) {
@@ -573,6 +587,7 @@ export const BookingDatesForm = props => {
     isPublishedListing,
     addOnOptions = [],
     ongoingEnabled = false,
+    insuranceOffer = null,
     quantityLabel,
     minTermMonths,
     ...rest
@@ -684,13 +699,36 @@ export const BookingDatesForm = props => {
         const { startDate, endDate } = values?.bookingDates ? values.bookingDates : {};
         const priceVariantName = values?.priceVariantName || null;
         // SpaceLinq: keep chosen add-ons in every line item estimate
+        // SpaceLinq: goods insurance as chosen in the form
+        const insuranceChoice = insuranceFromFormValues(values, insuranceOffer);
         const fetchLineItems = fv =>
           onHandleFetchLineItems({
-            values: { addOns: values?.addOns, ongoing: !!values?.ongoing, ...fv.values },
+            values: {
+              addOns: values?.addOns,
+              ongoing: !!values?.ongoing,
+              insurance: insuranceChoice.insurance,
+              ...fv.values,
+            },
+          });
+        // Re-price when an insurance field changes (the form value is not updated yet)
+        const fetchWithInsurance = nextInsuranceValues =>
+          fetchLineItems({
+            values: {
+              priceVariantName,
+              startDate,
+              endDate,
+              seats: values?.seats,
+              insurance: insuranceFromFormValues(
+                { ...values, ...nextInsuranceValues },
+                insuranceOffer
+              ).insurance,
+            },
           });
         // SpaceLinq: ongoing bookings show the first month in the estimate
         const ongoingFirstPeriodEnd =
-          values?.ongoing && startDate ? ongoingAgreement(startDate, timeZone).firstPeriodEnd : null;
+          values?.ongoing && startDate
+            ? ongoingAgreement(startDate, timeZone).firstPeriodEnd
+            : null;
 
         const startDateErrorMessage = intl.formatMessage({
           id: 'FieldDateRangeInput.invalidStartDate',
@@ -983,6 +1021,127 @@ export const BookingDatesForm = props => {
                     </Field>
                   );
                 })}
+              </fieldset>
+            ) : null}
+
+            {hasInsuranceOffer(insuranceOffer) ? (
+              <fieldset className={css.addOns}>
+                <legend className={css.addOnsLegend}>
+                  <FormattedMessage id="BookingDatesForm.spaceLinqInsuranceTitle" />
+                </legend>
+                <Field name="insurance" type="checkbox">
+                  {({ input }) => (
+                    <label className={css.addOn}>
+                      <input
+                        {...input}
+                        onChange={e => {
+                          input.onChange(e);
+                          fetchWithInsurance({ insurance: e.target.checked });
+                        }}
+                      />
+                      <span>
+                        <FormattedMessage
+                          id="BookingDatesForm.spaceLinqInsuranceLabel"
+                          values={{
+                            rate: formatMoney(
+                              intl,
+                              new sdkTypes.Money(insuranceOffer.rate, unitPrice.currency)
+                            ),
+                          }}
+                        />
+                      </span>
+                    </label>
+                  )}
+                </Field>
+                {values?.insurance ? (
+                  <>
+                    <Field name="insuranceValue">
+                      {({ input }) => (
+                        <label className={css.insuranceValue}>
+                          <span>
+                            <FormattedMessage id="BookingDatesForm.spaceLinqInsuranceValue" />
+                          </span>
+                          <input
+                            {...input}
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0"
+                            onChange={e => {
+                              input.onChange(e);
+                              fetchWithInsurance({ insuranceValue: e.target.value });
+                            }}
+                          />
+                        </label>
+                      )}
+                    </Field>
+                    {Number.isInteger(insuranceOffer.dgRate) && insuranceOffer.dgRate > 0 ? (
+                      <Field name="insuranceDg" type="checkbox">
+                        {({ input }) => (
+                          <label className={css.addOn}>
+                            <input
+                              {...input}
+                              onChange={e => {
+                                input.onChange(e);
+                                fetchWithInsurance({ insuranceDg: e.target.checked });
+                              }}
+                            />
+                            <span>
+                              <FormattedMessage
+                                id="BookingDatesForm.spaceLinqInsuranceDg"
+                                values={{
+                                  rate: formatMoney(
+                                    intl,
+                                    new sdkTypes.Money(insuranceOffer.dgRate, unitPrice.currency)
+                                  ),
+                                }}
+                              />
+                            </span>
+                          </label>
+                        )}
+                      </Field>
+                    ) : null}
+                    <p className={css.ongoingHelp}>
+                      {insuranceChoice.status === 'ok' ? (
+                        <FormattedMessage
+                          id="BookingDatesForm.spaceLinqInsurancePremium"
+                          values={{
+                            premium: formatMoney(
+                              intl,
+                              new sdkTypes.Money(
+                                monthlyPremium(
+                                  insuranceOffer,
+                                  insuranceChoice.insurance.value,
+                                  insuranceChoice.insurance.dg
+                                ),
+                                unitPrice.currency
+                              )
+                            ),
+                          }}
+                        />
+                      ) : insuranceChoice.status === 'over-limit' ? (
+                        <FormattedMessage
+                          id="BookingDatesForm.spaceLinqInsuranceOverLimit"
+                          values={{
+                            max: formatMoney(
+                              intl,
+                              new sdkTypes.Money(insuranceOffer.maxValue, unitPrice.currency)
+                            ),
+                          }}
+                        />
+                      ) : (
+                        <FormattedMessage id="BookingDatesForm.spaceLinqInsuranceEnterValue" />
+                      )}
+                    </p>
+                    {insuranceOffer.exclusions ? (
+                      <p className={css.ongoingHelp}>
+                        <FormattedMessage
+                          id="BookingDatesForm.spaceLinqInsuranceExclusions"
+                          values={{ exclusions: insuranceOffer.exclusions }}
+                        />
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
               </fieldset>
             ) : null}
 

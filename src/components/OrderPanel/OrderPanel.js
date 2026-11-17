@@ -554,7 +554,8 @@ const OrderPanel = props => {
             addOnOptions={publicData?.pricing?.addOns || []}
             minTermMonths={publicData?.pricing?.minTermMonths}
             ongoingEnabled={isSpaceLinqListingType(publicData?.listingType)}
-            quantityLabel={spaceLinqPricingModels[publicData?.pricing?.model]?.quantityLabel}
+            insuranceOffer={publicData?.pricing?.insurance}
+            quantityLabel={spaceLinqPricingModels[(publicData?.pricing?.model)]?.quantityLabel}
             {...priceVariantsMaybe}
             {...sharedProps}
           />

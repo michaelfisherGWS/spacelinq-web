@@ -891,3 +891,69 @@ describe('SpaceLinq fee on services', () => {
     expect(noCommission.find(i => i.code === 'line-item/service-commission')).toBeUndefined();
   });
 });
+
+describe('SpaceLinq goods insurance line item', () => {
+  const { Money } = types;
+  const { getSpaceLinqInsuranceLineItems } = require('./lineItems');
+  // $1.50 per $1,000 per month, $4.00 for dangerous goods, up to $500,000
+  const publicData = { pricing: { insurance: { rate: 150, dgRate: 400, maxValue: 50000000 } } };
+  const oneMonth = 365 / 12;
+
+  it('charges the monthly premium for the declared value', () => {
+    const [item] = getSpaceLinqInsuranceLineItems(
+      publicData,
+      { insurance: { value: 8000000 } },
+      oneMonth,
+      'NZD'
+    );
+    expect(item.code).toEqual('line-item/insurance');
+    expect(item.unitPrice.amount).toEqual(12000);
+  });
+
+  it('uses the dangerous goods rate when asked', () => {
+    const [item] = getSpaceLinqInsuranceLineItems(
+      publicData,
+      { insurance: { value: 8000000, dg: true } },
+      oneMonth,
+      'NZD'
+    );
+    expect(item.unitPrice.amount).toEqual(32000);
+  });
+
+  it('rejects values over the limit and listings without an offer', () => {
+    expect(() =>
+      getSpaceLinqInsuranceLineItems(publicData, { insurance: { value: 60000000 } }, 30, 'NZD')
+    ).toThrow(/declared value/);
+    expect(() =>
+      getSpaceLinqInsuranceLineItems({ pricing: {} }, { insurance: { value: 1000 } }, 30, 'NZD')
+    ).toThrow(/does not offer/);
+    expect(() =>
+      getSpaceLinqInsuranceLineItems(
+        { pricing: { insurance: { rate: 150, maxValue: 50000000 } } },
+        { insurance: { value: 1000, dg: true } },
+        30,
+        'NZD'
+      )
+    ).toThrow(/dangerous goods/);
+  });
+
+  it('adds nothing when no insurance was asked for', () => {
+    expect(getSpaceLinqInsuranceLineItems(publicData, {}, 30, 'NZD')).toEqual([]);
+  });
+
+  it('is included in the 7% services fee', () => {
+    const listing = {
+      attributes: { price: new Money(200, 'NZD'), publicData: { unitType: 'day', ...publicData } },
+    };
+    const orderData = {
+      bookingStart: new Date(Date.UTC(2027, 0, 1)),
+      bookingEnd: new Date(Date.UTC(2027, 0, 31)),
+      insurance: { value: 8000000 },
+    };
+    const result = transactionLineItems(listing, orderData, { percentage: 10 }, null);
+    const premium = result.find(i => i.code === 'line-item/insurance').unitPrice.amount;
+    expect(result.find(i => i.code === 'line-item/service-commission').unitPrice.amount).toEqual(
+      premium
+    );
+  });
+});

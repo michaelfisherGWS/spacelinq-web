@@ -1,4 +1,5 @@
 import { ongoingAgreement } from '../../util/spaceLinqBilling';
+import { insuranceFromFormValues } from '../../util/spaceLinqInsurance';
 import React from 'react';
 import { FormattedMessage } from '../../util/reactIntl';
 import { types as sdkTypes } from '../../util/sdkLoader';
@@ -435,6 +436,9 @@ export const handleSubmit = parameters => values => {
     seats: seatsRaw,
     deliveryMethod,
     ongoing, // SpaceLinq: billed monthly until notice is given
+    insurance: insuranceSelected, // SpaceLinq: goods insurance fields
+    insuranceValue,
+    insuranceDg,
     ...otherOrderData
   } = values;
 
@@ -446,6 +450,12 @@ export const handleSubmit = parameters => values => {
   const agreementMaybe = agreement
     ? { agreement: { start: agreement.start, end: agreement.end, timeZone, ongoing: true } }
     : {};
+
+  const { insurance: insuranceOrder } = insuranceFromFormValues(
+    { insurance: insuranceSelected, insuranceValue, insuranceDg },
+    listing?.attributes?.publicData?.pricing?.insurance
+  );
+  const insuranceMaybe = insuranceOrder ? { insurance: insuranceOrder } : {};
 
   const bookingMaybe = bookingDates
     ? {
@@ -479,6 +489,7 @@ export const handleSubmit = parameters => values => {
       ...seatsMaybe,
       ...deliveryMethodMaybe,
       ...agreementMaybe,
+      ...insuranceMaybe,
       ...otherOrderData,
     },
     confirmPaymentError: null,

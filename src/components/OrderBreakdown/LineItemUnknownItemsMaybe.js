@@ -32,6 +32,7 @@ import css from './OrderBreakdown.module.css';
 const ADDON_CODE_PREFIX = 'line-item/addon-';
 const SERVICE_CODE_PREFIX = 'line-item/service-';
 const SERVICE_LABELS = {
+  'line-item/insurance': 'Goods insurance',
   'line-item/service-other': 'Other service charge',
   'line-item/service-commission': 'SpaceLinq fee on services',
 };

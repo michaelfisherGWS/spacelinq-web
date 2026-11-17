@@ -1632,5 +1632,20 @@
   "SpaceLinqPaymentSchedule.otherNote": "What the other charge is for",
   "SpaceLinqPaymentSchedule.saveCharges": "Save charges",
   "SpaceLinqPaymentSchedule.cancelCharges": "Cancel",
-  "SpaceLinqPaymentSchedule.chargesError": "The charges were not saved. Check the numbers, and describe any other charge, then try again."
+  "SpaceLinqPaymentSchedule.chargesError": "The charges were not saved. Check the numbers, and describe any other charge, then try again.",
+  "BookingDatesForm.spaceLinqInsuranceTitle": "Goods insurance",
+  "BookingDatesForm.spaceLinqInsuranceLabel": "Insure my goods ({rate} per $1,000 of goods per month)",
+  "BookingDatesForm.spaceLinqInsuranceValue": "Value of your goods ($)",
+  "BookingDatesForm.spaceLinqInsuranceDg": "My goods include dangerous goods ({rate} per $1,000 per month)",
+  "BookingDatesForm.spaceLinqInsurancePremium": "Insurance: {premium} per month, charged with your storage. Cover is arranged by the storage provider.",
+  "BookingDatesForm.spaceLinqInsuranceOverLimit": "This provider insures goods up to {max}. Book without insurance and ask the provider for a quote in a message.",
+  "BookingDatesForm.spaceLinqInsuranceEnterValue": "Enter the total value of the goods you will store.",
+  "BookingDatesForm.spaceLinqInsuranceExclusions": "Not covered: {exclusions}",
+  "SpaceLinqPricingForm.insuranceHeading": "Goods insurance",
+  "SpaceLinqPricingForm.insuranceHelp": "If your insurance lets you cover customers' goods, set your rate once. Customers enter the value of their goods when they book and the premium is added to their monthly payment. Check with your broker before offering this.",
+  "SpaceLinqPricingForm.insuranceOffered": "Offer goods insurance on this listing",
+  "SpaceLinqPricingForm.insuranceRate": "Price per $1,000 of goods, per month",
+  "SpaceLinqPricingForm.insuranceDgRate": "Price per $1,000 for dangerous goods, per month (leave empty if not covered)",
+  "SpaceLinqPricingForm.insuranceMaxValue": "Highest value of goods you will cover",
+  "SpaceLinqPricingForm.insuranceExclusions": "Goods or events not covered (optional)"
 }

@@ -188,6 +188,7 @@ const extend = (req, res) => {
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};
       const seats = firstBooking.attributes.seats;
       const addOns = agreementTx.attributes.protectedData?.addOns;
+      const insurance = agreementTx.attributes.protectedData?.insurance;
       const currency = listing.attributes.price?.currency;
 
       return periods.map((period, index) => ({
@@ -200,7 +201,14 @@ const extend = (req, res) => {
           seats,
           lineItems: transactionLineItems(
             listing,
-            { bookingStart: period.start, bookingEnd: period.end, seats, addOns, currency },
+            {
+              bookingStart: period.start,
+              bookingEnd: period.end,
+              seats,
+              addOns,
+              insurance,
+              currency,
+            },
             providerCommission,
             customerCommission,
             { skipMinTerm: true }
@@ -210,6 +218,7 @@ const extend = (req, res) => {
             period: instalments.length + 2 + index,
             unitType: 'day',
             ...(Array.isArray(addOns) && addOns.length ? { addOns } : {}),
+            ...(insurance ? { insurance } : {}),
           },
         },
       }));

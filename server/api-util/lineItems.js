@@ -175,6 +175,57 @@ const getSpaceLinqAddOnLineItems = (publicData, orderData, days, currency) => {
 };
 exports.getSpaceLinqAddOnLineItems = getSpaceLinqAddOnLineItems;
 
+/**
+ * SpaceLinq: goods insurance. The provider sets a rate per $1,000 of goods per month
+ * on the listing; the customer declares the value of their goods when booking.
+ * Charged pro-rata for the booked days, like the other monthly services.
+ *
+ * @param {Object} publicData listing public data (pricing.insurance: { rate, dgRate, maxValue })
+ * @param {Object} orderData order data (insurance: { value, dg }), value in cents
+ * @param {number} days booking length in days
+ * @param {string} currency
+ * @returns {Array} zero or one line item
+ * @throws 400 error if the listing does not offer the cover that was asked for
+ */
+const getSpaceLinqInsuranceLineItems = (publicData, orderData, days, currency) => {
+  const request = orderData?.insurance;
+  if (!request || !days) {
+    return [];
+  }
+  const badRequest = message => {
+    const error = new Error(message);
+    error.status = 400;
+    error.statusText = message;
+    error.data = {};
+    return error;
+  };
+  const offer = publicData?.pricing?.insurance;
+  const value = Number(request.value);
+  const rate = request.dg ? offer?.dgRate : offer?.rate;
+  if (!Number.isInteger(offer?.rate) || !Number.isInteger(offer?.maxValue)) {
+    throw badRequest('Error: this listing does not offer goods insurance.');
+  }
+  if (!Number.isInteger(rate) || rate <= 0) {
+    throw badRequest('Error: this listing does not insure dangerous goods.');
+  }
+  if (!Number.isInteger(value) || value <= 0 || value > offer.maxValue) {
+    throw badRequest('Error: the declared value is outside what this listing insures.');
+  }
+  const monthlyPremium = (value / 100000) * rate;
+  const premium = Math.round((monthlyPremium * days) / DAYS_PER_MONTH);
+  return premium > 0
+    ? [
+        {
+          code: 'line-item/insurance',
+          unitPrice: new Money(premium, currency),
+          quantity: 1,
+          includeFor: ['customer', 'provider'],
+        },
+      ]
+    : [];
+};
+exports.getSpaceLinqInsuranceLineItems = getSpaceLinqInsuranceLineItems;
+
 // SpaceLinq: the marketplace fee on services (optional monthly services and
 // 3PL service charges). Storage uses the commission set in Sharetribe Console.
 // Set to 7 for testing so it is easy to tell apart from the 10% storage fee.
@@ -358,7 +409,17 @@ exports.transactionLineItems = (
     throw error;
   }
 
-  const serviceLineItems = [...addOnLineItems, ...(options.extraLineItems || [])];
+  const insuranceLineItems = getSpaceLinqInsuranceLineItems(
+    publicData,
+    orderData,
+    bookedDays,
+    currency
+  );
+  const serviceLineItems = [
+    ...addOnLineItems,
+    ...insuranceLineItems,
+    ...(options.extraLineItems || []),
+  ];
 
   const lineItems = [
     order,

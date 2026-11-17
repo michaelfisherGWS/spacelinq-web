@@ -19,7 +19,7 @@ import { instalmentTransitions } from '../../util/spaceLinqInstalments';
  */
 export const scheduleMonthlyInstalments = ({ orderId, pageData }) => {
   const { listing, orderData } = pageData || {};
-  const { agreement, seats, addOns } = orderData || {};
+  const { agreement, seats, addOns, insurance } = orderData || {};
   if (!agreement?.start || !agreement?.end || !listing?.id || !orderId) {
     return Promise.resolve({ scheduled: 0, total: 0 });
   }
@@ -30,12 +30,17 @@ export const scheduleMonthlyInstalments = ({ orderId, pageData }) => {
     agreement.timeZone
   ).slice(1);
   const addOnsMaybe = Array.isArray(addOns) && addOns.length ? { addOns } : {};
+  const insuranceMaybe = insurance ? { insurance } : {};
   const seatsMaybe = seats ? { seats } : {};
 
   const scheduleOne = (period, index) =>
     initiatePrivileged({
       isSpeculative: false,
-      orderData: { ...addOnsMaybe, agreement: { start: agreement.start, end: agreement.end } },
+      orderData: {
+        ...addOnsMaybe,
+        ...insuranceMaybe,
+        agreement: { start: agreement.start, end: agreement.end },
+      },
       bodyParams: {
         processAlias: MONTHLY_PROCESS_ALIAS,
         transition: instalmentTransitions.SCHEDULE,
@@ -50,6 +55,7 @@ export const scheduleMonthlyInstalments = ({ orderId, pageData }) => {
             period: index + 2,
             unitType: 'day',
             ...addOnsMaybe,
+            ...insuranceMaybe,
           },
         },
       },

@@ -31,6 +31,7 @@ const initiateOrderPayloadCreator = (
     expectedPayinTotal,
     addOns, // SpaceLinq: optional services, priced by the client app's server
     agreement, // SpaceLinq: the whole term, when this order is one month of it
+    insurance, // SpaceLinq: declared value of goods, priced by the client app's server
     ...otherOrderParams
   } = orderParams;
   const quantityMaybe = quantity ? { stockReservationQuantity: quantity } : {};
@@ -42,6 +43,7 @@ const initiateOrderPayloadCreator = (
     ...(expectedPayinTotal ? { expectedPayinTotal } : {}),
     ...(addOns?.length ? { addOns } : {}),
     ...(agreement ? { agreement } : {}),
+    ...(insurance ? { insurance } : {}),
   };
 
   // Parameters for Marketplace API
@@ -314,6 +316,7 @@ const speculateTransactionPayloadCreator = (
     bookingDates,
     addOns, // SpaceLinq: optional services, priced by the client app's server
     agreement, // SpaceLinq: the whole term, when this order is one month of it
+    insurance, // SpaceLinq: declared value of goods, priced by the client app's server
     ...otherOrderParams
   } = orderParams;
   const quantityMaybe = quantity ? { stockReservationQuantity: quantity } : {};
@@ -325,6 +328,7 @@ const speculateTransactionPayloadCreator = (
     ...(priceVariantName ? { priceVariantName } : {}),
     ...(addOns?.length ? { addOns } : {}),
     ...(agreement ? { agreement } : {}),
+    ...(insurance ? { insurance } : {}),
   };
 
   // Card pull speculation needs a placeholder cardToken for the Marketplace API.

@@ -186,6 +186,7 @@ module.exports = (req, res) => {
             bookingEnd: booking.attributes.end,
             seats: booking.attributes.seats,
             addOns: transaction.attributes.protectedData?.addOns,
+            insurance: transaction.attributes.protectedData?.insurance,
             currency,
           },
           providerCommission,
