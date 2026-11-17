@@ -200,10 +200,8 @@ export const addOns = [
   { key: 'wms', label: 'WMS / inventory management' },
   { key: 'dock-handling', label: 'Dock / loading handling' },
   { key: 'goods-insurance', label: "Goods insurance (provider's cover)" },
-  { key: 'monitored-security', label: 'Monitored alarm and security' },
   { key: 'stock-counts', label: 'Regular stock counts' },
   { key: 'pallet-hire', label: 'Pallet hire' },
-  { key: 'pest-control', label: 'Pest control' },
 ];
 
 /**
@@ -297,6 +295,29 @@ export const extraListingFields = [
     'CCTV',
     'Monitored alarm',
     '24/7 access',
+    'Fenced and gated site',
+    'Security patrols',
+    'Sprinkler system',
+    'Pest control programme',
+  ]),
+  // Included with the space at no extra charge, like amenities at a hotel.
+  multiEnumField('amenities', 'Included amenities', [
+    'Private or separate access',
+    'On-site toilets',
+    'Staff room or kitchen',
+    'Office or desk space',
+    'Wi-Fi',
+    'Customer parking',
+    'Truck parking and turning area',
+    'On-site staff during open hours',
+  ]),
+  multiEnumField('sustainability', 'Sustainability', [
+    'Solar power',
+    'LED lighting',
+    'Electric forklifts',
+    'EV charging',
+    'Rainwater collection',
+    'Recycling programme',
   ]),
 ];
 
