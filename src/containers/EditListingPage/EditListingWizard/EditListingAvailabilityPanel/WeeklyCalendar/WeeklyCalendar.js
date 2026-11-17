@@ -129,7 +129,7 @@ const DayScheduleEntry = ({
           {useMultipleSeats && !(seats === 0) ? (
             <div className={css.seats}>
               <FormattedMessage
-                id="EditListingAvailabilityPanel.WeeklyCalendar.seats"
+                id="EditListingAvailabilityPanel.WeeklyCalendar.spaceLinqAvailable"
                 values={{ seats }}
               />
             </div>
@@ -167,7 +167,7 @@ const DayScheduleEntry = ({
           {useMultipleSeats && !(seats === 0) ? (
             <div className={css.seats}>
               <FormattedMessage
-                id="EditListingAvailabilityPanel.WeeklyCalendar.seats"
+                id="EditListingAvailabilityPanel.WeeklyCalendar.spaceLinqAvailable"
                 values={{ seats }}
               />
             </div>

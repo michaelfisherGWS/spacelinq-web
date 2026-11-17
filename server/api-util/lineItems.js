@@ -273,6 +273,18 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const bookedDays = ['day', 'night'].includes(unitType) ? units || quantity : null;
   const addOnLineItems = getSpaceLinqAddOnLineItems(publicData, orderData, bookedDays, currency);
 
+  // SpaceLinq: enforce the provider's minimum term (30 days per month)
+  const minTermMonths = Number(publicData?.pricing?.minTermMonths) || 0;
+  const minDays = minTermMonths > 0 ? Math.floor(minTermMonths * DAYS_PER_MONTH) : 0;
+  if (bookedDays && minDays && bookedDays < minDays) {
+    const message = `Error: this listing has a minimum term of ${minDays} days.`;
+    const error = new Error(message);
+    error.status = 400;
+    error.statusText = message;
+    error.data = {};
+    throw error;
+  }
+
   const lineItems = [
     order,
     ...extraLineItems,

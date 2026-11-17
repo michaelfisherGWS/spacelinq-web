@@ -1584,5 +1584,12 @@
   "BookingDatesForm.seatsOutOfRange": "Please enter a number from 1 to {max}.",
   "BookingDatesForm.seatsAvailable": "{max} available for these dates",
   "ListingPage.accessHours": "Access hours: {hours}",
-  "ListingPage.minTerm": "Minimum term: {months, plural, one {# month} other {# months}}"
+  "ListingPage.minTerm": "Minimum term: {months, plural, one {# month} other {# months}}",
+  "OrderBreakdown.spaceLinqDayUnits": "{unitPrice} × {quantity, number} {quantity, plural, one {jour} other {jours}} × {seats, number} {seats, plural, one {unité} other {unités}}",
+  "InboxPage.spaceLinqQuantity": "Quantité : {seats}",
+  "EditListingAvailabilityPanel.WeeklyCalendar.spaceLinqAvailable": "{seats} disponibles",
+  "EditListingWizard.tabLabelStorageOption": "Option de stockage",
+  "BookingDatesForm.minTermError": "La durée minimale pour cet espace est de {days} jours. Choisissez une date de fin plus tardive.",
+  "EditListingStylePanel.storageOptionTitle": "Option de stockage pour {listingTitle}",
+  "EditListingStylePanel.storageOptionCreateTitle": "Option de stockage"
 }

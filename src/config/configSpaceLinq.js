@@ -104,6 +104,41 @@ export const storageUnits = [
     description:
       'A standard 20 ft container on site (internal approx. 5.9 x 2.35 x 2.39 m), for your exclusive use.',
   },
+  // Residential and small-scale options. They borrow existing icons until the
+  // illustrated set replaces them.
+  {
+    key: 'garage',
+    label: 'Garage',
+    icon: 'bay',
+    listingTypes: ['dedicated-space', 'quote-on-request'],
+    dimensions: { length: 6000, width: 3000, height: 2400, maxWeight: null },
+    description:
+      'A lockable single garage, about 6 x 3 m, for household goods, a vehicle or trade stock.',
+  },
+  {
+    key: 'spare-room',
+    label: 'Spare room or loft',
+    icon: 'floor',
+    listingTypes: ['dedicated-space', 'quote-on-request'],
+    dimensions: { length: 3000, width: 3000, height: 2400, maxWeight: null },
+    description: 'An indoor room, loft or basement space, about 3 x 3 m, for boxes and furniture.',
+  },
+  {
+    key: 'shed',
+    label: 'Shed or lock-up',
+    icon: 'cage',
+    listingTypes: ['dedicated-space', 'quote-on-request'],
+    dimensions: { length: 3000, width: 2400, height: 2100, maxWeight: null },
+    description: 'A garden shed or small lock-up for tools, equipment and seasonal items.',
+  },
+  {
+    key: 'parking-space',
+    label: 'Parking or driveway space',
+    icon: 'yard',
+    listingTypes: ['dedicated-space', 'quote-on-request'],
+    dimensions: { length: 5400, width: 2400, height: null, maxWeight: null },
+    description: 'An off-street space for a car, boat, caravan or trailer.',
+  },
 ];
 
 export const getStorageUnit = key => storageUnits.find(u => u.key === key) || null;

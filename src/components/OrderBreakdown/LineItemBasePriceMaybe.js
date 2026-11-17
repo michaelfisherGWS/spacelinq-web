@@ -64,7 +64,8 @@ const LineItemBasePriceMaybe = props => {
 
   const message = unitPurchase?.seats ? (
     <FormattedMessage
-      id={`${translationKey}Seats`}
+      // SpaceLinq: daily bookings count storage units (pallets, m²), not seats
+      id={isDaily ? 'OrderBreakdown.spaceLinqDayUnits' : `${translationKey}Seats`}
       values={{ unitPrice, quantity, seats: unitPurchase.seats }}
     />
   ) : (

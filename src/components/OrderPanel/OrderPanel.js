@@ -549,6 +549,7 @@ const OrderPanel = props => {
             timeZone={timeZone}
             finePrintComponent={SubmitFinePrint}
             addOnOptions={publicData?.pricing?.addOns || []}
+            minTermMonths={publicData?.pricing?.minTermMonths}
             quantityLabel={spaceLinqPricingModels[publicData?.pricing?.model]?.quantityLabel}
             {...priceVariantsMaybe}
             {...sharedProps}

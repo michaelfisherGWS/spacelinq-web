@@ -154,7 +154,7 @@ const tabLabelAndSubmit = (intl, tab, isNewListingFlow, isPriceDisabled, process
     labelKey = 'EditListingWizard.tabLabelPhotos';
     submitButtonKey = `EditListingWizard.${processNameString}${newOrEdit}.savePhotos`;
   } else if (tab === STYLE) {
-    labelKey = 'EditListingWizard.tabLabelStyle';
+    labelKey = 'EditListingWizard.tabLabelStorageOption';
     submitButtonKey = `EditListingWizard.${processNameString}${newOrEdit}.saveStyle`;
   }
 

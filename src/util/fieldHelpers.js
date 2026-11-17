@@ -172,7 +172,8 @@ export const pickCustomFieldProps = (extendedData, fieldConfigs, entityTypeKey, 
             heading: label,
             options: createFilterOptions(enumOptions),
             selectedOptions: value || [],
-            showUnselectedOptions: scope !== 'metadata' && showUnselectedOptions !== false,
+            // SpaceLinq: list only what the provider ticked. Long crossed-out lists are noise.
+            showUnselectedOptions: false,
           },
         ]
       : isTargetEntityType && !!value && config.schemaType === SCHEMA_TYPE_TEXT && shouldPick

@@ -10,6 +10,7 @@ import {
   SCHEMA_TYPE_MULTI_ENUM,
 } from '../../../../util/types';
 import { LISTING_PAGE_PARAM_TYPE_NEW } from '../../../../util/urlHelpers';
+import { maskContactDetails } from '../../../../util/contactMasking';
 import {
   isFieldForCategory,
   isFieldForListingType,
@@ -417,8 +418,9 @@ const EditListingDetailsPanel = props => {
             );
             // New values for listing attributes
             const updateValues = {
-              title: title.trim(),
-              description,
+              // SpaceLinq: listing text is public, so phone numbers, emails and links are removed
+              title: maskContactDetails(title.trim()).text,
+              description: maskContactDetails(description).text,
               publicData: {
                 listingType,
                 transactionProcessAlias,

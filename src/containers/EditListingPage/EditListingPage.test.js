@@ -1747,7 +1747,7 @@ describe('EditListingPage', () => {
       expect(queryAllByText('EditListingAvailabilityPanel.WeeklyCalendar.available')).toHaveLength(
         6
       );
-      expect(queryAllByText('EditListingAvailabilityPanel.WeeklyCalendar.seats')).toHaveLength(6);
+      expect(queryAllByText('EditListingAvailabilityPanel.WeeklyCalendar.spaceLinqAvailable')).toHaveLength(6);
 
       const sunday = getByText('Sunday');
       const cell = sunday.parentNode.parentNode;
@@ -3138,7 +3138,7 @@ describe('EditListingPage', () => {
     expect(getByText('EditListingWizard.tabLabelDetails')).toBeInTheDocument();
 
     // Style tab should be visible (style panel)
-    expect(getByText('EditListingWizard.tabLabelStyle')).toBeInTheDocument();
+    expect(getByText('EditListingWizard.tabLabelStorageOption')).toBeInTheDocument();
 
     // Other tabs should NOT be visible due to defaultListingFields configuration
     const tabLabelLocation = 'EditListingWizard.tabLabelLocation';
@@ -3207,7 +3207,7 @@ describe('EditListingPage', () => {
     expect(getByText('EditListingWizard.tabLabelDetails')).toBeInTheDocument();
 
     // Photos tab should be visible (style panel)
-    expect(getByText('EditListingWizard.tabLabelStyle')).toBeInTheDocument();
+    expect(getByText('EditListingWizard.tabLabelStorageOption')).toBeInTheDocument();
 
     // Other tabs should NOT be visible due to defaultListingFields configuration
     const tabLabelLocation = 'EditListingWizard.tabLabelLocation';

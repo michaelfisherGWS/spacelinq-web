@@ -414,6 +414,21 @@ const filterTimeSlotsByDate = (allTimeSlots, startDate, endDate) => {
   );
 };
 
+// SpaceLinq: a provider's minimum term, counted as 30 days per month
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+export const minTermDays = months => (months > 0 ? Math.floor((months * 365) / 12) : 0);
+const minTermValidator = (minTermMonths, intl) => value => {
+  const minDays = minTermDays(Number(minTermMonths));
+  const { startDate, endDate } = value || {};
+  if (!minDays || !startDate || !endDate) {
+    return undefined;
+  }
+  const days = Math.round((endDate.getTime() - startDate.getTime()) / MS_PER_DAY);
+  return days < minDays
+    ? intl.formatMessage({ id: 'BookingDatesForm.minTermError' }, { days: minDays })
+    : undefined;
+};
+
 // Finds the timeslot with the smallest number of seats
 const findMinSeatsTimeSlot = timeSlots => {
   return timeSlots.reduce((minSeatsSlot, timeSlot) => {
@@ -550,6 +565,7 @@ export const BookingDatesForm = props => {
     isPublishedListing,
     addOnOptions = [],
     quantityLabel,
+    minTermMonths,
     ...rest
   } = props;
   const intl = useIntl();
@@ -787,7 +803,8 @@ export const BookingDatesForm = props => {
                     id: 'BookingDatesForm.requiredDate',
                   })
                 ),
-                bookingDatesRequired(startDateErrorMessage, endDateErrorMessage)
+                bookingDatesRequired(startDateErrorMessage, endDateErrorMessage),
+                minTermValidator(minTermMonths, intl)
               )}
               isDayBlocked={isDayBlocked}
               isOutsideRange={isOutsideRange}

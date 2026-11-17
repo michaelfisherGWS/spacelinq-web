@@ -216,7 +216,10 @@ export const InboxItem = props => {
         </div>
         {availabilityType == AVAILABILITY_MULTIPLE_SEATS && unitLineItem?.seats ? (
           <div className={css.itemSeats}>
-            <FormattedMessage id="InboxPage.seats" values={{ seats: unitLineItem.seats }} />
+            <FormattedMessage
+              id="InboxPage.spaceLinqQuantity"
+              values={{ seats: unitLineItem.seats }}
+            />
           </div>
         ) : null}
         <div className={css.itemState}>

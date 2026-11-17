@@ -53,12 +53,14 @@ const EditListingStylePanel = props => {
 
   const panelHeadingProps = isPublished
     ? {
-        id: 'EditListingStylePanel.title',
+        id: isSpaceLinq ? 'EditListingStylePanel.storageOptionTitle' : 'EditListingStylePanel.title',
         values: { listingTitle: <ListingLink listing={listing} />, lineBreak: <br /> },
         messageProps: { listingTitle: listing.attributes.title },
       }
     : {
-        id: 'EditListingStylePanel.createListingTitle',
+        id: isSpaceLinq
+          ? 'EditListingStylePanel.storageOptionCreateTitle'
+          : 'EditListingStylePanel.createListingTitle',
         values: { lineBreak: <br /> },
         messageProps: {},
       };
