@@ -62,3 +62,30 @@ export const isBilledMonthly = (start, end, timeZone) => {
   const count = splitIntoBillingPeriods(start, end, timeZone).length;
   return count > 1 && count <= MAX_BILLING_PERIODS;
 };
+
+// An ongoing booking is scheduled this many months ahead at a time.
+export const ONGOING_MONTHS_AHEAD = 12;
+// Notice a customer must give to end an ongoing booking.
+export const NOTICE_MONTHS = 1;
+
+/**
+ * Agreement dates for an ongoing booking that starts on the given date.
+ *
+ * @param {Date} start first day of storage
+ * @param {string} timeZone IANA time zone of the listing
+ * @returns {{start: string, end: string, firstPeriodEnd: Date}} ISO strings for the agreement, and the end of the first month
+ */
+export const ongoingAgreement = (start, timeZone = 'Etc/UTC') => {
+  const first = moment.tz(start, timeZone);
+  return {
+    start: first.toISOString(),
+    end: first
+      .clone()
+      .add(ONGOING_MONTHS_AHEAD, 'months')
+      .toISOString(),
+    firstPeriodEnd: first
+      .clone()
+      .add(1, 'months')
+      .toDate(),
+  };
+};

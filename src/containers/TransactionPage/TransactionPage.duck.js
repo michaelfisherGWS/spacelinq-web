@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
+import { answerPendingInstalments, instalmentTransitions } from '../../util/spaceLinqInstalments';
 import appSettings from '../../config/settings';
 import { isEmpty, pickBy } from '../../util/common';
 import { types as sdkTypes, file as sdkFile, createImageVariantConfig } from '../../util/sdkLoader';
@@ -404,6 +405,21 @@ const makeTransitionPayloadCreator = (
       if (transitionName === process?.transitions?.ACCEPT) {
         const listingId = transaction?.relationships?.listing?.data?.id;
         sendUnlockedSiteDetails(sdk, txId, listingId);
+      }
+
+      // SpaceLinq monthly billing: the provider's answer to an ongoing booking
+      // applies to every scheduled month, not just the first one.
+      const isOngoingBooking = !!transaction?.attributes?.protectedData?.agreement;
+      const instalmentAnswer =
+        transitionName === process?.transitions?.ACCEPT
+          ? instalmentTransitions.ACCEPT
+          : transitionName === process?.transitions?.DECLINE
+          ? instalmentTransitions.DECLINE
+          : null;
+      if (isOngoingBooking && instalmentAnswer) {
+        answerPendingInstalments(sdk, txId.uuid, instalmentAnswer).catch(e => {
+          log.error(e, 'spacelinq-answer-instalments-failed', { txId: txId.uuid });
+        });
       }
 
       // There could be automatic transitions after this transition

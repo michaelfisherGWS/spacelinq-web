@@ -1,3 +1,4 @@
+import { scheduleMonthlyInstalments } from './spaceLinqMonthly';
 import React, { useState, useEffect, useRef } from 'react';
 
 // Import contexts and util modules
@@ -135,6 +136,9 @@ const getOrderParams = (
   // SpaceLinq: optional services chosen on the listing page
   const addOns = pageData.orderData?.addOns;
   const addOnsMaybe = Array.isArray(addOns) && addOns.length ? { addOns } : {};
+  // SpaceLinq: ongoing booking billed monthly
+  const agreement = pageData.orderData?.agreement;
+  const agreementMaybe = agreement ? { agreement } : {};
   const deliveryMethod = pageData.orderData?.deliveryMethod;
   const deliveryMethodMaybe = deliveryMethod ? { deliveryMethod } : {};
   const { listingType, unitType, priceVariants } = pageData?.listing?.attributes?.publicData || {};
@@ -166,6 +170,7 @@ const getOrderParams = (
       ...transactionFieldProtectedData,
       ...customerDefaultMessageMaybe,
       ...addOnsMaybe,
+      ...agreementMaybe,
     },
   };
 
@@ -191,6 +196,7 @@ const getOrderParams = (
     ...bookingDatesMaybe(pageData.orderData?.bookingDates),
     ...priceVariantNameMaybe,
     ...addOnsMaybe,
+    ...agreementMaybe,
     ...protectedDataMaybe,
     ...pushPaymentMaybe,
     ...optionalPaymentParams,
@@ -334,8 +340,11 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
     ...pickTransactionFieldsData(formValues, 'protected', true, transactionFieldConfigs),
   };
 
+  // SpaceLinq: an ongoing booking charges later months to the saved card, so the card is always saved.
+  const isOngoingBooking = !!pageData?.orderData?.agreement;
   const saveAfterOnetimePayment =
-    Array.isArray(saveAfterOnetimePaymentRaw) && saveAfterOnetimePaymentRaw.length > 0;
+    isOngoingBooking ||
+    (Array.isArray(saveAfterOnetimePaymentRaw) && saveAfterOnetimePaymentRaw.length > 0);
   const selectedPaymentFlow = paymentFlow(cardPaymentMode, saveAfterOnetimePayment);
   const hasDefaultPaymentMethodSaved = hasDefaultPaymentMethod(stripeCustomerFetched, currentUser);
   const stripePaymentMethodId = hasDefaultPaymentMethodSaved
@@ -434,6 +443,12 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
 
   // There are multiple XHR calls that needs to be made against Stripe API and Sharetribe Marketplace API on checkout with payments
   processCheckoutWithPayment(orderParams, requestPaymentParams)
+    .then(response => {
+      // SpaceLinq: once the first month is paid, schedule the later months.
+      return isOngoingBooking && response?.orderId
+        ? scheduleMonthlyInstalments({ orderId: response.orderId, pageData }).then(() => response)
+        : response;
+    })
     .then(response => {
       setSubmitting(false);
 

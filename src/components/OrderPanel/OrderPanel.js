@@ -25,7 +25,10 @@ import {
 import { formatMoney } from '../../util/currency';
 import { types as sdkTypes } from '../../util/sdkLoader';
 import { getSpaceLinqDisplayPrice } from '../../util/spacelinqPricing';
-import { pricingModels as spaceLinqPricingModels } from '../../config/configSpaceLinq';
+import {
+  pricingModels as spaceLinqPricingModels,
+  isSpaceLinqListingType,
+} from '../../config/configSpaceLinq';
 import { createSlug, parse, stringify } from '../../util/urlHelpers';
 import { userDisplayNameAsString } from '../../util/data';
 import {
@@ -550,6 +553,7 @@ const OrderPanel = props => {
             finePrintComponent={SubmitFinePrint}
             addOnOptions={publicData?.pricing?.addOns || []}
             minTermMonths={publicData?.pricing?.minTermMonths}
+            ongoingEnabled={isSpaceLinqListingType(publicData?.listingType)}
             quantityLabel={spaceLinqPricingModels[publicData?.pricing?.model]?.quantityLabel}
             {...priceVariantsMaybe}
             {...sharedProps}

@@ -132,6 +132,14 @@ export const transitionPrivileged = body => {
   return post('/api/transition-privileged', body);
 };
 
+// SpaceLinq: give notice to end an ongoing booking.
+// Cancels the scheduled months that start after the notice period.
+//
+// See `server/api/spacelinq-give-notice.js`.
+export const spaceLinqGiveNotice = body => {
+  return post('/api/spacelinq/give-notice', body);
+};
+
 // Create user with identity provider (e.g. Facebook or Google)
 //
 // If loginWithIdp api call fails and user can't authenticate to Marketplace API with idp

@@ -1,0 +1,77 @@
+.root {
+  margin: 24px 24px 0 24px;
+  padding: 16px;
+  border: 1px solid var(--colorGrey100);
+  border-radius: var(--borderRadiusMedium);
+
+  @media (--viewportLarge) {
+    margin: 32px 0 0 0;
+  }
+}
+
+.title {
+  margin: 0 0 8px 0;
+}
+
+.intro {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 0 0 12px 0;
+}
+
+.list {
+  margin: 0 0 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  composes: marketplaceSmallFontStyles from global;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 8px 0;
+  border-top: 1px solid var(--colorGrey100);
+}
+
+.period {
+  flex: 1 1 60%;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.amount {
+  flex: 0 0 auto;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.status {
+  flex: 1 1 100%;
+  color: var(--colorGrey700);
+}
+
+.notice {
+  composes: marketplaceSmallFontStyles from global;
+  margin: 0 0 12px 0;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.noticeLink {
+  composes: marketplaceSmallFontStyles from global;
+  display: inline-block;
+  margin: 0;
+}
+
+.confirm {
+  margin-top: 8px;
+}
+
+.confirmButton {
+  margin: 0 0 12px 0;
+}
+
+.error {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorFail);
+  margin: 8px 0 0 0;
+}

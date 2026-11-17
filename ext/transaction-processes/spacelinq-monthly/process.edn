@@ -99,6 +99,14 @@
    :from :state/scheduled,
    :to :state/pending-payment}
 
+  ;; The operator can bring the payment forward from Console (billing a
+  ;; month early, or testing the automatic charge).
+  {:name :transition/operator-mark-pending-payment,
+   :actor :actor.role/operator,
+   :actions [],
+   :from :state/scheduled,
+   :to :state/pending-payment}
+
   ;; Automatic charge to the customer's saved card. If it fails, the
   ;; transaction stays in :state/pending-payment and the customer is asked
   ;; to pay manually.

@@ -12,6 +12,7 @@ import { AvatarLarge, NamedLink, UserDisplayName } from '../../../components';
 import { stateDataShape } from '../TransactionPage.stateData';
 // These are internal components that make this file more readable.
 import BreakdownMaybe from './BreakdownMaybe';
+import SpaceLinqPaymentSchedule from '../SpaceLinqPaymentSchedule/SpaceLinqPaymentSchedule';
 import DetailCardHeadingsMaybe from './DetailCardHeadingsMaybe';
 import DetailCardImage from './DetailCardImage';
 import DeliveryInfoMaybe from './DeliveryInfoMaybe';
@@ -276,6 +277,13 @@ export class TransactionPanelComponent extends Component {
                   showBookingLocation={showBookingLocation}
                 />
               </div>
+            ) : null}
+            {protectedData?.agreement && this.props.transactionId?.uuid ? (
+              <SpaceLinqPaymentSchedule
+                agreementId={this.props.transactionId.uuid}
+                transactionRole={transactionRole}
+                timeZone={listing?.attributes?.availabilityPlan?.timezone}
+              />
             ) : null}
             <FeedSection
               rootClassName={css.feedContainer}

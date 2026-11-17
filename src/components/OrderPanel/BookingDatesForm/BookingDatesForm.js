@@ -21,6 +21,7 @@ import { LINE_ITEM_DAY, propTypes } from '../../../util/types';
 import { formatMoney } from '../../../util/currency';
 import { types as sdkTypes } from '../../../util/sdkLoader';
 import { addOns as spaceLinqAddOnConfig } from '../../../config/configSpaceLinq';
+import { ongoingAgreement } from '../../../util/spaceLinqBilling';
 import { timeSlotsPerDate } from '../../../util/generators';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 
@@ -346,9 +347,14 @@ const calculateLineItems = (
   isOwnListing,
   fetchLineItemsInProgress,
   onFetchTransactionLineItems,
-  seatsEnabled
+  seatsEnabled,
+  timeZone
 ) => formValues => {
-  const { startDate, endDate, priceVariantName, seats, addOns } = formValues?.values || {};
+  const { startDate, endDate: selectedEndDate, priceVariantName, seats, addOns, ongoing } =
+    formValues?.values || {};
+  // SpaceLinq: an ongoing booking is billed monthly, so the estimate is for the first month.
+  const agreement = ongoing && startDate ? ongoingAgreement(startDate, timeZone) : null;
+  const endDate = agreement ? agreement.firstPeriodEnd : selectedEndDate;
 
   const priceVariantMaybe = priceVariantName ? { priceVariantName } : {};
   const seatCount = seats ? parseInt(seats, 10) : 1;
@@ -360,6 +366,7 @@ const calculateLineItems = (
     ...(seatsEnabled && { seats: seatCount }),
     // SpaceLinq: optional services
     ...(Array.isArray(addOns) && addOns.length ? { addOns } : {}),
+    ...(agreement ? { agreement: { start: agreement.start, end: agreement.end } } : {}),
   };
 
   if (startDate && endDate && !fetchLineItemsInProgress) {
@@ -417,10 +424,11 @@ const filterTimeSlotsByDate = (allTimeSlots, startDate, endDate) => {
 // SpaceLinq: a provider's minimum term, counted as 30 days per month
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export const minTermDays = months => (months > 0 ? Math.floor((months * 365) / 12) : 0);
-const minTermValidator = (minTermMonths, intl) => value => {
+const minTermValidator = (minTermMonths, intl) => (value, allValues) => {
   const minDays = minTermDays(Number(minTermMonths));
   const { startDate, endDate } = value || {};
-  if (!minDays || !startDate || !endDate) {
+  // An ongoing booking runs until notice is given, so the chosen end date does not limit it.
+  if (!minDays || !startDate || !endDate || allValues?.ongoing) {
     return undefined;
   }
   const days = Math.round((endDate.getTime() - startDate.getTime()) / MS_PER_DAY);
@@ -564,6 +572,7 @@ export const BookingDatesForm = props => {
     preselectedPriceVariant,
     isPublishedListing,
     addOnOptions = [],
+    ongoingEnabled = false,
     quantityLabel,
     minTermMonths,
     ...rest
@@ -633,7 +642,8 @@ export const BookingDatesForm = props => {
     isOwnListing,
     false,
     onFetchTransactionLineItems,
-    seatsEnabled
+    seatsEnabled,
+    timeZone
   );
   const onHandleFetchLineItems = formValues => {
     if (fetchLineItemsInProgress) {
@@ -675,7 +685,12 @@ export const BookingDatesForm = props => {
         const priceVariantName = values?.priceVariantName || null;
         // SpaceLinq: keep chosen add-ons in every line item estimate
         const fetchLineItems = fv =>
-          onHandleFetchLineItems({ values: { addOns: values?.addOns, ...fv.values } });
+          onHandleFetchLineItems({
+            values: { addOns: values?.addOns, ongoing: !!values?.ongoing, ...fv.values },
+          });
+        // SpaceLinq: ongoing bookings show the first month in the estimate
+        const ongoingFirstPeriodEnd =
+          values?.ongoing && startDate ? ongoingAgreement(startDate, timeZone).firstPeriodEnd : null;
 
         const startDateErrorMessage = intl.formatMessage({
           id: 'FieldDateRangeInput.invalidStartDate',
@@ -693,7 +708,7 @@ export const BookingDatesForm = props => {
           startDate && endDate
             ? {
                 startDate,
-                endDate,
+                endDate: ongoingFirstPeriodEnd || endDate,
               }
             : null;
         const showEstimatedBreakdown =
@@ -971,10 +986,50 @@ export const BookingDatesForm = props => {
               </fieldset>
             ) : null}
 
+            {ongoingEnabled ? (
+              <Field name="ongoing" type="checkbox">
+                {({ input }) => (
+                  <div className={css.addOns}>
+                    <label className={css.addOn}>
+                      <input
+                        {...input}
+                        onChange={e => {
+                          input.onChange(e);
+                          fetchLineItems({
+                            values: {
+                              priceVariantName,
+                              startDate,
+                              endDate,
+                              seats: values?.seats,
+                              ongoing: e.target.checked,
+                            },
+                          });
+                        }}
+                      />
+                      <span>
+                        <FormattedMessage id="BookingDatesForm.spaceLinqOngoingLabel" />
+                      </span>
+                    </label>
+                    {input.checked ? (
+                      <p className={css.ongoingHelp}>
+                        <FormattedMessage id="BookingDatesForm.spaceLinqOngoingHelp" />
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+              </Field>
+            ) : null}
+
             {showEstimatedBreakdown ? (
               <div className={css.priceBreakdownContainer}>
                 <H6 as={sectionHeadingAs} className={css.bookingBreakdownTitle}>
-                  <FormattedMessage id="BookingDatesForm.priceBreakdownTitle" />
+                  <FormattedMessage
+                    id={
+                      ongoingFirstPeriodEnd
+                        ? 'BookingDatesForm.spaceLinqOngoingBreakdownTitle'
+                        : 'BookingDatesForm.priceBreakdownTitle'
+                    }
+                  />
                 </H6>
                 <hr className={css.totalDivider} />
                 <EstimatedCustomerBreakdownMaybe

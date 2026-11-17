@@ -1,3 +1,4 @@
+import { ongoingAgreement } from '../../util/spaceLinqBilling';
 import React from 'react';
 import { FormattedMessage } from '../../util/reactIntl';
 import { types as sdkTypes } from '../../util/sdkLoader';
@@ -433,14 +434,24 @@ export const handleSubmit = parameters => values => {
     quantity: quantityRaw,
     seats: seatsRaw,
     deliveryMethod,
+    ongoing, // SpaceLinq: billed monthly until notice is given
     ...otherOrderData
   } = values;
+
+  // SpaceLinq: an ongoing booking pays the first month at checkout.
+  // The later months are scheduled after that payment (see CheckoutPage).
+  const timeZone = listing?.attributes?.availabilityPlan?.timezone || 'Etc/UTC';
+  const agreement =
+    ongoing && bookingDates?.startDate ? ongoingAgreement(bookingDates.startDate, timeZone) : null;
+  const agreementMaybe = agreement
+    ? { agreement: { start: agreement.start, end: agreement.end, timeZone, ongoing: true } }
+    : {};
 
   const bookingMaybe = bookingDates
     ? {
         bookingDates: {
           bookingStart: bookingDates.startDate,
-          bookingEnd: bookingDates.endDate,
+          bookingEnd: agreement ? agreement.firstPeriodEnd : bookingDates.endDate,
         },
       }
     : bookingStartTime && bookingEndTime
@@ -467,6 +478,7 @@ export const handleSubmit = parameters => values => {
       ...quantityMaybe,
       ...seatsMaybe,
       ...deliveryMethodMaybe,
+      ...agreementMaybe,
       ...otherOrderData,
     },
     confirmPaymentError: null,
