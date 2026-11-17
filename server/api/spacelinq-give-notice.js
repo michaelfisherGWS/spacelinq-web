@@ -83,13 +83,11 @@ const giveNotice = (req, res) => {
       )
     )
     .then(() => {
-      res
-        .status(200)
-        .json({
-          cancelled: cancellable.length,
-          // Storage ends when the first cancelled month would have started
-          endsAt: cancellable.length > 0 ? cancellable[0].start.toISOString() : null,
-        });
+      res.status(200).json({
+        cancelled: cancellable.length,
+        // Storage ends when the first cancelled month would have started
+        endsAt: cancellable.length > 0 ? cancellable[0].start.toISOString() : null,
+      });
     })
     .catch(e => {
       handleError(res, e);

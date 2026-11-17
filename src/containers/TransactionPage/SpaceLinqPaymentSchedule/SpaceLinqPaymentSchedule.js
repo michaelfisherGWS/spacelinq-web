@@ -111,7 +111,9 @@ const SpaceLinqPaymentSchedule = props => {
             const { start, end } = tx.booking?.attributes || {};
             const money = isCustomer ? tx.attributes.payinTotal : tx.attributes.payoutTotal;
             const status = instalmentStatus(tx);
-            const chargeDate = start ? new Date(start.getTime() - CHARGE_DAYS_BEFORE * MS_PER_DAY) : null;
+            const chargeDate = start
+              ? new Date(start.getTime() - CHARGE_DAYS_BEFORE * MS_PER_DAY)
+              : null;
             return (
               <li key={tx.id.uuid} className={css.item}>
                 <span className={css.period}>

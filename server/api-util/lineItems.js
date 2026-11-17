@@ -183,7 +183,12 @@ exports.getSpaceLinqAddOnLineItems = getSpaceLinqAddOnLineItems;
 const getSpaceLinqAgreementDays = orderData => {
   const { agreement, bookingStart, bookingEnd } = orderData || {};
   const toTime = v => (v instanceof Date ? v.getTime() : v ? new Date(v).getTime() : NaN);
-  const [aStart, aEnd, bStart, bEnd] = [agreement?.start, agreement?.end, bookingStart, bookingEnd].map(toTime);
+  const [aStart, aEnd, bStart, bEnd] = [
+    agreement?.start,
+    agreement?.end,
+    bookingStart,
+    bookingEnd,
+  ].map(toTime);
   if ([aStart, aEnd, bStart, bEnd].some(Number.isNaN)) {
     return null;
   }

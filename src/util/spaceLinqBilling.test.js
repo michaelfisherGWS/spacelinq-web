@@ -4,7 +4,10 @@ import { splitIntoBillingPeriods, isBilledMonthly } from './spaceLinqBilling';
 const tz = 'Pacific/Auckland';
 const d = s => moment.tz(s, tz).toDate();
 const fmt = periods =>
-  periods.map(p => [moment.tz(p.start, tz).format('YYYY-MM-DD'), moment.tz(p.end, tz).format('YYYY-MM-DD')]);
+  periods.map(p => [
+    moment.tz(p.start, tz).format('YYYY-MM-DD'),
+    moment.tz(p.end, tz).format('YYYY-MM-DD'),
+  ]);
 
 describe('splitIntoBillingPeriods', () => {
   it('keeps a booking of a month or less as one period', () => {

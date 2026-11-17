@@ -5,7 +5,11 @@ const tx = (id, agreementId, lastTransition) => ({
   attributes: { lastTransition, protectedData: { agreementId } },
   relationships: { booking: { data: { id: { uuid: `b-${id}` } } } },
 });
-const booking = (id, start) => ({ type: 'booking', id: { uuid: `b-${id}` }, attributes: { start } });
+const booking = (id, start) => ({
+  type: 'booking',
+  id: { uuid: `b-${id}` },
+  attributes: { start },
+});
 
 describe('SpaceLinq give notice', () => {
   const now = new Date(Date.UTC(2027, 0, 20));
@@ -34,6 +38,8 @@ describe('SpaceLinq give notice', () => {
   });
 
   it('cancels nothing when no month starts after the notice period', () => {
-    expect(pickCancellable(transactions, included, 'A', new Date(Date.UTC(2027, 3, 1)))).toEqual([]);
+    expect(pickCancellable(transactions, included, 'A', new Date(Date.UTC(2027, 3, 1)))).toEqual(
+      []
+    );
   });
 });

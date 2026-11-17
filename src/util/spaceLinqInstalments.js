@@ -28,8 +28,7 @@ export const instalmentTransitions = {
   CONFIRM_MANUAL_PAYMENT: 'transition/confirm-manual-payment',
   PROVIDER_CANCEL_UNPAID: 'transition/provider-cancel-unpaid',
   OPERATOR_CANCEL_UNPAID: 'transition/operator-cancel-unpaid',
-  OPERATOR_CANCEL_FROM_PENDING_CONFIRMATION:
-    'transition/operator-cancel-from-pending-confirmation',
+  OPERATOR_CANCEL_FROM_PENDING_CONFIRMATION: 'transition/operator-cancel-from-pending-confirmation',
   COMPLETE: 'transition/complete',
   OPERATOR_COMPLETE: 'transition/operator-complete',
   OPERATOR_REFUND: 'transition/operator-refund',
@@ -74,7 +73,7 @@ const statusByTransition = {
  * @param {Object} tx instalment transaction
  * @returns {string|null} one of the INSTALMENT_* statuses
  */
-export const instalmentStatus = tx => statusByTransition[tx?.attributes?.lastTransition] || null;
+export const instalmentStatus = tx => statusByTransition[(tx?.attributes?.lastTransition)] || null;
 
 /**
  * Fetch the instalments of one ongoing booking, earliest month first.
