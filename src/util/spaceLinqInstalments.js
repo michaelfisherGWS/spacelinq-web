@@ -12,6 +12,7 @@ import { MONTHLY_PROCESS_NAME } from './spaceLinqBilling';
 
 export const instalmentTransitions = {
   SCHEDULE: 'transition/schedule',
+  SCHEDULE_EXTENSION: 'transition/schedule-extension',
   ACCEPT: 'transition/accept',
   OPERATOR_ACCEPT: 'transition/operator-accept',
   DECLINE: 'transition/decline',
@@ -48,6 +49,7 @@ export const INSTALMENT_CANCELLED = 'cancelled';
 const statusByTransition = {
   [t.SCHEDULE]: INSTALMENT_PENDING,
   [t.ACCEPT]: INSTALMENT_SCHEDULED,
+  [t.SCHEDULE_EXTENSION]: INSTALMENT_SCHEDULED,
   [t.OPERATOR_ACCEPT]: INSTALMENT_SCHEDULED,
   [t.UPDATE_CHARGES]: INSTALMENT_SCHEDULED,
   [t.MARK_PENDING_PAYMENT]: INSTALMENT_DUE,

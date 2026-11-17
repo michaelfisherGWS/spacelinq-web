@@ -19,6 +19,19 @@
     {:name :action/privileged-set-line-items}],
    :to :state/pending}
 
+  ;; A later month added to an ongoing booking that the provider has already
+  ;; accepted. The server checks that before running this, so the month is
+  ;; accepted straight away.
+  {:name :transition/schedule-extension,
+   :actor :actor.role/customer,
+   :privileged? true,
+   :actions
+   [{:name :action/update-protected-data}
+    {:name :action/create-pending-booking, :config {:type :time}}
+    {:name :action/privileged-set-line-items}
+    {:name :action/accept-booking}],
+   :to :state/scheduled}
+
   ;; Provider accepts or declines together with the first month.
   {:name :transition/accept,
    :actor :actor.role/provider,

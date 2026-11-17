@@ -4,6 +4,8 @@ const {
   calculateShippingFee,
   getProviderCommissionMaybe,
   getCustomerCommissionMaybe,
+  hasCommissionPercentage,
+  calculateTotalFromLineItems,
 } = require('./lineItemHelpers');
 const { types } = require('sharetribe-flex-sdk');
 const { Money } = types;
@@ -173,6 +175,39 @@ const getSpaceLinqAddOnLineItems = (publicData, orderData, days, currency) => {
 };
 exports.getSpaceLinqAddOnLineItems = getSpaceLinqAddOnLineItems;
 
+// SpaceLinq: the marketplace fee on services (optional monthly services and
+// 3PL service charges). Storage uses the commission set in Sharetribe Console.
+// Set to 7 for testing so it is easy to tell apart from the 10% storage fee.
+const SERVICE_COMMISSION_PERCENT = 7;
+const SERVICE_COMMISSION_CODE = 'line-item/service-commission';
+
+/**
+ * SpaceLinq: provider commission on service line items.
+ * Only charged when the marketplace charges providers a commission at all.
+ *
+ * @param {Array} serviceLineItems add-on and service charge line items
+ * @param {Object} providerCommission commission asset from Sharetribe Console
+ * @param {string} currency
+ * @returns {Array} zero or one line item, included for the provider only
+ */
+const getSpaceLinqServiceCommissionMaybe = (serviceLineItems, providerCommission, currency) => {
+  if (!hasCommissionPercentage(providerCommission) || serviceLineItems.length === 0) {
+    return [];
+  }
+  const servicesTotal = calculateTotalFromLineItems(serviceLineItems);
+  return servicesTotal.amount > 0
+    ? [
+        {
+          code: SERVICE_COMMISSION_CODE,
+          unitPrice: new Money(servicesTotal.amount, currency),
+          percentage: -1 * SERVICE_COMMISSION_PERCENT,
+          includeFor: ['provider'],
+        },
+      ]
+    : [];
+};
+exports.getSpaceLinqServiceCommissionMaybe = getSpaceLinqServiceCommissionMaybe;
+
 /**
  * SpaceLinq: length in days of the whole agreement when the order is one
  * monthly instalment of it. The instalment must sit inside the agreement.
@@ -323,12 +358,14 @@ exports.transactionLineItems = (
     throw error;
   }
 
+  const serviceLineItems = [...addOnLineItems, ...(options.extraLineItems || [])];
+
   const lineItems = [
     order,
     ...extraLineItems,
-    ...addOnLineItems,
-    ...(options.extraLineItems || []),
+    ...serviceLineItems,
     ...getProviderCommissionMaybe(providerCommission, order, currency),
+    ...getSpaceLinqServiceCommissionMaybe(serviceLineItems, providerCommission, currency),
     ...getCustomerCommissionMaybe(customerCommission, order, currency),
   ];
 

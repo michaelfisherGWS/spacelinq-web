@@ -3,7 +3,10 @@ import { intlShape } from '../../util/reactIntl';
 import { formatMoney } from '../../util/currency';
 import { humanizeLineItemCode } from '../../util/data';
 import { LINE_ITEMS, propTypes } from '../../util/types';
-import { addOns as spaceLinqAddOns } from '../../config/configSpaceLinq';
+import {
+  addOns as spaceLinqAddOns,
+  serviceRates as spaceLinqServiceRates,
+} from '../../config/configSpaceLinq';
 
 import css from './OrderBreakdown.module.css';
 
@@ -27,7 +30,21 @@ import css from './OrderBreakdown.module.css';
  */
 // SpaceLinq: show optional services by their own name, e.g. "WMS / inventory management"
 const ADDON_CODE_PREFIX = 'line-item/addon-';
+const SERVICE_CODE_PREFIX = 'line-item/service-';
+const SERVICE_LABELS = {
+  'line-item/service-other': 'Other service charge',
+  'line-item/service-commission': 'SpaceLinq fee on services',
+};
 const lineItemLabel = code => {
+  if (SERVICE_LABELS[code]) {
+    return SERVICE_LABELS[code];
+  }
+  if (code && code.startsWith(SERVICE_CODE_PREFIX)) {
+    const rate = spaceLinqServiceRates.find(r => r.key === code.slice(SERVICE_CODE_PREFIX.length));
+    if (rate) {
+      return rate.label;
+    }
+  }
   if (code && code.startsWith(ADDON_CODE_PREFIX)) {
     const key = code.slice(ADDON_CODE_PREFIX.length);
     const addOn = spaceLinqAddOns.find(a => a.key === key);

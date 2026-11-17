@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { useConfiguration } from '../../../context/configurationContext';
 import { FormattedMessage, useIntl } from '../../../util/reactIntl';
 import { formatMoney } from '../../../util/currency';
 import { types as sdkTypes } from '../../../util/sdkLoader';
-import { spaceLinqGiveNotice } from '../../../util/api';
+import { spaceLinqGiveNotice, spaceLinqExtend } from '../../../util/api';
 import { serviceRates } from '../../../config/configSpaceLinq';
 import {
   fetchInstalments,
@@ -88,9 +88,26 @@ const SpaceLinqPaymentSchedule = props => {
       .catch(() => setLoadError(true));
   }, [dispatch, agreementId, transactionRole]);
 
+  // An ongoing booking is kept scheduled twelve months ahead. Only the customer can
+  // add months, so this runs once whenever they open the booking page.
+  const extensionChecked = useRef(false);
   useEffect(() => {
-    load();
-  }, [load]);
+    load().then(() => {
+      if (transactionRole !== 'customer' || extensionChecked.current) {
+        return null;
+      }
+      extensionChecked.current = true;
+      // Test sites only: ?extendMonths=13 looks further ahead (ignored by the live server).
+      const testMonths = Number.parseInt(
+        new URLSearchParams(window.location.search).get('extendMonths'),
+        10
+      );
+      const monthsAheadMaybe = Number.isInteger(testMonths) ? { monthsAhead: testMonths } : {};
+      return spaceLinqExtend({ agreementId, ...monthsAheadMaybe })
+        .then(result => (result?.added > 0 ? load() : null))
+        .catch(() => null);
+    });
+  }, [load, agreementId, transactionRole]);
 
   const isCustomer = transactionRole === 'customer';
   const isProvider = transactionRole === 'provider';

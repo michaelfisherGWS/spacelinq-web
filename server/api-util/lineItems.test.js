@@ -842,3 +842,52 @@ describe('SpaceLinq minimum term and monthly instalments', () => {
     expect(() => transactionLineItems(listing, orderData, null, null)).toThrow(/minimum term/);
   });
 });
+
+describe('SpaceLinq fee on services', () => {
+  const { Money } = types;
+  const listing = {
+    attributes: {
+      price: new Money(200, 'NZD'),
+      publicData: {
+        unitType: 'day',
+        pricing: { addOns: [{ key: 'goods-insurance', price: 3650 }] },
+      },
+    },
+  };
+  const orderData = {
+    bookingStart: new Date(Date.UTC(2027, 0, 1)),
+    bookingEnd: new Date(Date.UTC(2027, 0, 31)),
+    addOns: ['goods-insurance'],
+  };
+  const extraLineItems = [
+    {
+      code: 'line-item/service-other',
+      unitPrice: new Money(10000, 'NZD'),
+      quantity: 1,
+      includeFor: ['customer', 'provider'],
+    },
+  ];
+
+  it('charges 7% of add-ons and service charges to the provider', () => {
+    const result = transactionLineItems(listing, orderData, { percentage: 10 }, null, {
+      extraLineItems,
+    });
+    const fee = result.find(i => i.code === 'line-item/service-commission');
+    // 30 days of a $36.50 monthly add-on is $36.00, plus the $100.00 service charge
+    expect(fee.unitPrice.amount).toEqual(3600 + 10000);
+    expect(fee.percentage).toEqual(-7);
+    expect(fee.includeFor).toEqual(['provider']);
+  });
+
+  it('adds no services fee when there are no services or no provider commission', () => {
+    const noServices = transactionLineItems(
+      listing,
+      { ...orderData, addOns: [] },
+      { percentage: 10 },
+      null
+    );
+    expect(noServices.find(i => i.code === 'line-item/service-commission')).toBeUndefined();
+    const noCommission = transactionLineItems(listing, orderData, null, null, { extraLineItems });
+    expect(noCommission.find(i => i.code === 'line-item/service-commission')).toBeUndefined();
+  });
+});

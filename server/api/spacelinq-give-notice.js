@@ -14,6 +14,7 @@ const CUSTOMER_CANCEL = 'transition/customer-cancel';
 const SCHEDULED_TRANSITIONS = [
   'transition/accept',
   'transition/operator-accept',
+  'transition/schedule-extension',
   'transition/update-charges',
 ];
 

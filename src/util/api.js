@@ -140,6 +140,14 @@ export const spaceLinqGiveNotice = body => {
   return post('/api/spacelinq/give-notice', body);
 };
 
+// SpaceLinq: keep an ongoing booking scheduled twelve months ahead.
+// Called when the customer opens the booking page.
+//
+// See `server/api/spacelinq-extend.js`.
+export const spaceLinqExtend = body => {
+  return post('/api/spacelinq/extend', body);
+};
+
 // Create user with identity provider (e.g. Facebook or Google)
 //
 // If loginWithIdp api call fails and user can't authenticate to Marketplace API with idp
