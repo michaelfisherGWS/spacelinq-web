@@ -114,6 +114,7 @@ export const storageUnitsForListingType = listingType =>
 /**
  * Pricing models. Each SpaceLinq listing type has one default model.
  * - unitLabel: what one "seat" of capacity means for this model.
+ * - quantityLabel: label for the quantity box customers fill in when booking.
  */
 export const pricingModels = {
   'per-pallet': {
@@ -121,6 +122,7 @@ export const pricingModels = {
     rateLabel: 'Rate per pallet',
     unitLabel: 'pallet',
     capacityLabel: 'Pallet positions available',
+    quantityLabel: 'Number of pallets',
     cycles: ['week', 'month'],
   },
   'per-m2': {
@@ -128,6 +130,7 @@ export const pricingModels = {
     rateLabel: 'Rate per m²',
     unitLabel: 'm²',
     capacityLabel: 'Floor area available (m²)',
+    quantityLabel: 'Area needed (m²)',
     cycles: ['month'],
   },
   'fixed-monthly': {

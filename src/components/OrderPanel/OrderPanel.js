@@ -25,6 +25,7 @@ import {
 import { formatMoney } from '../../util/currency';
 import { types as sdkTypes } from '../../util/sdkLoader';
 import { getSpaceLinqDisplayPrice } from '../../util/spacelinqPricing';
+import { pricingModels as spaceLinqPricingModels } from '../../config/configSpaceLinq';
 import { createSlug, parse, stringify } from '../../util/urlHelpers';
 import { userDisplayNameAsString } from '../../util/data';
 import {
@@ -548,6 +549,7 @@ const OrderPanel = props => {
             timeZone={timeZone}
             finePrintComponent={SubmitFinePrint}
             addOnOptions={publicData?.pricing?.addOns || []}
+            quantityLabel={spaceLinqPricingModels[publicData?.pricing?.model]?.quantityLabel}
             {...priceVariantsMaybe}
             {...sharedProps}
           />

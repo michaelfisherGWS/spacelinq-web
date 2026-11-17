@@ -3,6 +3,7 @@ import { intlShape } from '../../util/reactIntl';
 import { formatMoney } from '../../util/currency';
 import { humanizeLineItemCode } from '../../util/data';
 import { LINE_ITEMS, propTypes } from '../../util/types';
+import { addOns as spaceLinqAddOns } from '../../config/configSpaceLinq';
 
 import css from './OrderBreakdown.module.css';
 
@@ -24,6 +25,19 @@ import css from './OrderBreakdown.module.css';
  * @param {intlShape} props.intl - The intl object
  * @returns {JSX.Element}
  */
+// SpaceLinq: show optional services by their own name, e.g. "WMS / inventory management"
+const ADDON_CODE_PREFIX = 'line-item/addon-';
+const lineItemLabel = code => {
+  if (code && code.startsWith(ADDON_CODE_PREFIX)) {
+    const key = code.slice(ADDON_CODE_PREFIX.length);
+    const addOn = spaceLinqAddOns.find(a => a.key === key);
+    if (addOn) {
+      return addOn.label;
+    }
+  }
+  return humanizeLineItemCode(code);
+};
+
 const LineItemUnknownItemsMaybe = props => {
   const { lineItems, isProvider, intl } = props;
 
@@ -41,8 +55,8 @@ const LineItemUnknownItemsMaybe = props => {
 
         const label =
           quantity && quantity > 1
-            ? `${humanizeLineItemCode(item.code)} x ${quantity}`
-            : humanizeLineItemCode(item.code);
+            ? `${lineItemLabel(item.code)} x ${quantity}`
+            : lineItemLabel(item.code);
 
         const formattedTotal = formatMoney(intl, item.lineTotal);
         return (

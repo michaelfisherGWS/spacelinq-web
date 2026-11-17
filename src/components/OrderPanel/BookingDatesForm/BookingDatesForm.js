@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Form as FinalForm, Field } from 'react-final-form';
 import classNames from 'classnames';
 
@@ -524,6 +524,7 @@ const onPriceVariantChange = props => value => {
  * @param {Array<Object>} [props.priceVariants] - The price variants
  * @param {ReactNode} [props.priceVariantFieldComponent] - The component to use for the price variant field
  * @param {boolean} props.isPublishedListing - Whether the listing is published
+ * @param {string} [props.quantityLabel] - SpaceLinq label for the quantity box, e.g. "Number of pallets"
  * @returns {JSX.Element}
  */
 export const BookingDatesForm = props => {
@@ -548,6 +549,7 @@ export const BookingDatesForm = props => {
     preselectedPriceVariant,
     isPublishedListing,
     addOnOptions = [],
+    quantityLabel,
     ...rest
   } = props;
   const intl = useIntl();
@@ -606,13 +608,32 @@ export const BookingDatesForm = props => {
 
   const classes = classNames(rootClassName || css.root, className);
 
-  const onHandleFetchLineItems = calculateLineItems(
+  // SpaceLinq: if a price estimate is already loading, remember the latest request and send it
+  // when the current one finishes. Otherwise quick changes (typing "12", ticking an add-on)
+  // are dropped and the breakdown shows stale numbers.
+  const pendingFetchRef = useRef(null);
+  const sendFetch = calculateLineItems(
     listingId,
     isOwnListing,
-    fetchLineItemsInProgress,
+    false,
     onFetchTransactionLineItems,
     seatsEnabled
   );
+  const onHandleFetchLineItems = formValues => {
+    if (fetchLineItemsInProgress) {
+      pendingFetchRef.current = formValues;
+    } else {
+      sendFetch(formValues);
+    }
+  };
+
+  useEffect(() => {
+    if (!fetchLineItemsInProgress && pendingFetchRef.current) {
+      const pending = pendingFetchRef.current;
+      pendingFetchRef.current = null;
+      sendFetch(pending);
+    }
+  }, [fetchLineItemsInProgress]);
 
   return (
     <FinalForm
@@ -827,7 +848,7 @@ export const BookingDatesForm = props => {
                 {({ input, meta }) => (
                   <div className={css.fieldSeats}>
                     <label htmlFor="seats">
-                      {intl.formatMessage({ id: 'BookingDatesForm.seatsTitle' })}
+                      {quantityLabel || intl.formatMessage({ id: 'BookingDatesForm.seatsTitle' })}
                     </label>
                     <input
                       {...input}
@@ -862,7 +883,7 @@ export const BookingDatesForm = props => {
               <FieldSelect
                 name="seats"
                 id="seats"
-                label={intl.formatMessage({ id: 'BookingDatesForm.seatsTitle' })}
+                label={quantityLabel || intl.formatMessage({ id: 'BookingDatesForm.seatsTitle' })}
                 disabled={!(startDate && endDate)}
                 showLabelAsDisabled={!(startDate && endDate)}
                 className={css.fieldSeats}

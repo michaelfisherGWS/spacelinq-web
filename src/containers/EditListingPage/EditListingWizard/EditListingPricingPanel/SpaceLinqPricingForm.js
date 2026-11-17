@@ -149,6 +149,7 @@ const SpaceLinqPricingForm = props => {
 
             <div className={css.row}>
               <FieldCurrencyInput
+                placeholder="0.00"
                 id={`${formId}.rate`}
                 name="rate"
                 className={css.field}
@@ -193,6 +194,7 @@ const SpaceLinqPricingForm = props => {
 
             {isQuote ? (
               <FieldCurrencyInput
+                placeholder="0.00"
                 id={`${formId}.indicativeMax`}
                 name="indicativeMax"
                 className={css.field}
@@ -214,6 +216,7 @@ const SpaceLinqPricingForm = props => {
                     label={intl.formatMessage({ id: 'SpaceLinqPricingForm.minTermMonths' })}
                   />
                   <FieldCurrencyInput
+                    placeholder="0.00"
                     id={`${formId}.minMonthlySpend`}
                     name="minMonthlySpend"
                     className={css.field}
@@ -242,6 +245,7 @@ const SpaceLinqPricingForm = props => {
                   />
                   {enabled ? (
                     <FieldCurrencyInput
+                      placeholder="0.00"
                       id={`${formId}.addOnPrice_${a.key}`}
                       name={`addOnPrice_${a.key}`}
                       className={css.addOnPrice}
