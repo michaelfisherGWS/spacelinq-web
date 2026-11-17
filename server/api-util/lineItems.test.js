@@ -798,3 +798,47 @@ describe('SpaceLinq add-on line items', () => {
     expect(items).toHaveLength(0);
   });
 });
+
+describe('SpaceLinq minimum term and monthly instalments', () => {
+  const { Money } = types;
+  const listing = {
+    attributes: {
+      price: new Money(600, 'NZD'),
+      publicData: { unitType: 'day', pricing: { minTermMonths: 3 } },
+    },
+  };
+  const day = n => new Date(Date.UTC(2027, 0, 1 + n));
+
+  it('rejects a booking shorter than the minimum term', () => {
+    const orderData = { bookingStart: day(0), bookingEnd: day(31) };
+    expect(() => transactionLineItems(listing, orderData, null, null)).toThrow(/minimum term/);
+  });
+
+  it('accepts a one month instalment of an agreement that meets the minimum term', () => {
+    const orderData = {
+      bookingStart: day(31),
+      bookingEnd: day(59),
+      agreement: { start: day(0).toISOString(), end: day(120).toISOString() },
+    };
+    const result = transactionLineItems(listing, orderData, null, null);
+    expect(result[0].code).toEqual('line-item/day');
+  });
+
+  it('rejects an instalment when the agreement itself is too short', () => {
+    const orderData = {
+      bookingStart: day(31),
+      bookingEnd: day(59),
+      agreement: { start: day(0).toISOString(), end: day(60).toISOString() },
+    };
+    expect(() => transactionLineItems(listing, orderData, null, null)).toThrow(/minimum term/);
+  });
+
+  it('ignores an agreement that does not contain the instalment', () => {
+    const orderData = {
+      bookingStart: day(200),
+      bookingEnd: day(228),
+      agreement: { start: day(0).toISOString(), end: day(120).toISOString() },
+    };
+    expect(() => transactionLineItems(listing, orderData, null, null)).toThrow(/minimum term/);
+  });
+});

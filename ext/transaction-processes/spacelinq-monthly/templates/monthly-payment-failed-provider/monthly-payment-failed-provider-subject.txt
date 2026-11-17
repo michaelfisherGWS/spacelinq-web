@@ -1,0 +1,1 @@
+A monthly storage payment is overdue for {{transaction.listing.title}}

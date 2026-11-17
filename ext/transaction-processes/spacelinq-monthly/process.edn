@@ -1,0 +1,243 @@
+;; SpaceLinq monthly instalment process.
+;;
+;; One transaction per billing month after the first. The first month is paid
+;; at checkout with the default-booking process; this process holds the space
+;; for each later month and charges the customer's saved card automatically
+;; a few days before that month starts.
+;;
+;; No reviews here: the review belongs to the first-month transaction.
+{:format :v3,
+ :transitions
+ [;; Customer schedules a later month while checking out the first month.
+  ;; The booking is reserved as pending and the price is set by the server.
+  {:name :transition/schedule,
+   :actor :actor.role/customer,
+   :privileged? true,
+   :actions
+   [{:name :action/update-protected-data}
+    {:name :action/create-pending-booking, :config {:type :time}}
+    {:name :action/privileged-set-line-items}],
+   :to :state/pending}
+
+  ;; Provider accepts or declines together with the first month.
+  {:name :transition/accept,
+   :actor :actor.role/provider,
+   :actions [{:name :action/accept-booking}],
+   :from :state/pending,
+   :to :state/scheduled}
+  {:name :transition/operator-accept,
+   :actor :actor.role/operator,
+   :actions [{:name :action/accept-booking}],
+   :from :state/pending,
+   :to :state/scheduled}
+  {:name :transition/decline,
+   :actor :actor.role/provider,
+   :actions [{:name :action/decline-booking}],
+   :from :state/pending,
+   :to :state/declined}
+  {:name :transition/operator-decline,
+   :actor :actor.role/operator,
+   :actions [{:name :action/decline-booking}],
+   :from :state/pending,
+   :to :state/declined}
+  ;; Customer withdraws before the provider has answered (for example when the
+  ;; first-month payment was abandoned).
+  {:name :transition/withdraw,
+   :actor :actor.role/customer,
+   :actions [{:name :action/decline-booking}],
+   :from :state/pending,
+   :to :state/declined}
+  {:name :transition/expire,
+   :at
+   {:fn/min
+    [{:fn/plus
+      [{:fn/timepoint [:time/first-entered-state :state/pending]}
+       {:fn/period ["P6D"]}]}
+     {:fn/minus
+      [{:fn/timepoint [:time/booking-start]} {:fn/period ["P3D"]}]}]},
+   :actions [{:name :action/decline-booking}],
+   :from :state/pending,
+   :to :state/declined}
+
+  ;; Provider adds the month's service charges (3PL activity) before the
+  ;; payment is taken. The server recalculates every line item.
+  {:name :transition/update-charges,
+   :actor :actor.role/provider,
+   :privileged? true,
+   :actions
+   [{:name :action/update-protected-data}
+    {:name :action/privileged-set-line-items}],
+   :from :state/scheduled,
+   :to :state/scheduled}
+
+  ;; Cancelling a month that has not been charged yet. Notice rules are
+  ;; checked by the server, so the customer transition is privileged.
+  {:name :transition/customer-cancel,
+   :actor :actor.role/customer,
+   :privileged? true,
+   :actions [{:name :action/cancel-booking}],
+   :from :state/scheduled,
+   :to :state/cancelled}
+  {:name :transition/provider-cancel,
+   :actor :actor.role/provider,
+   :privileged? true,
+   :actions [{:name :action/cancel-booking}],
+   :from :state/scheduled,
+   :to :state/cancelled}
+  {:name :transition/operator-cancel,
+   :actor :actor.role/operator,
+   :actions [{:name :action/cancel-booking}],
+   :from :state/scheduled,
+   :to :state/cancelled}
+
+  ;; Three days before the month starts the payment falls due.
+  {:name :transition/mark-pending-payment,
+   :at
+   {:fn/minus
+    [{:fn/timepoint [:time/booking-start]} {:fn/period ["P3D"]}]},
+   :actions [],
+   :from :state/scheduled,
+   :to :state/pending-payment}
+
+  ;; Automatic charge to the customer's saved card. If it fails, the
+  ;; transaction stays in :state/pending-payment and the customer is asked
+  ;; to pay manually.
+  {:name :transition/auto-payment,
+   :at
+   {:fn/plus
+    [{:fn/timepoint [:time/first-entered-state :state/pending-payment]}
+     {:fn/period ["PT5M"]}]},
+   :actions
+   [{:name :action/stripe-create-payment-intent,
+     :config {:use-customer-default-payment-method? true}}
+    {:name :action/stripe-capture-payment-intent}],
+   :from :state/pending-payment,
+   :to :state/paid}
+
+  ;; Manual payment when the automatic charge did not go through.
+  {:name :transition/initiate-manual-payment,
+   :actor :actor.role/customer,
+   :actions [{:name :action/stripe-create-payment-intent}],
+   :from :state/pending-payment,
+   :to :state/pending-confirmation}
+  {:name :transition/confirm-manual-payment,
+   :actor :actor.role/customer,
+   :actions
+   [{:name :action/stripe-confirm-payment-intent}
+    {:name :action/stripe-capture-payment-intent}],
+   :from :state/pending-confirmation,
+   :to :state/paid}
+
+  ;; Unpaid month: the provider or the operator can cancel it.
+  {:name :transition/provider-cancel-unpaid,
+   :actor :actor.role/provider,
+   :actions [{:name :action/cancel-booking}],
+   :from :state/pending-payment,
+   :to :state/cancelled}
+  {:name :transition/operator-cancel-unpaid,
+   :actor :actor.role/operator,
+   :actions [{:name :action/cancel-booking}],
+   :from :state/pending-payment,
+   :to :state/cancelled}
+  {:name :transition/operator-cancel-from-pending-confirmation,
+   :actor :actor.role/operator,
+   :actions
+   [{:name :action/cancel-booking}
+    {:name :action/calculate-full-refund}
+    {:name :action/stripe-refund-payment}],
+   :from :state/pending-confirmation,
+   :to :state/cancelled}
+
+  ;; Paid month: payout to the provider when the month ends.
+  {:name :transition/complete,
+   :at {:fn/timepoint [:time/booking-end]},
+   :actions [{:name :action/stripe-create-payout}],
+   :from :state/paid,
+   :to :state/delivered}
+  {:name :transition/operator-complete,
+   :actor :actor.role/operator,
+   :actions [{:name :action/stripe-create-payout}],
+   :from :state/paid,
+   :to :state/delivered}
+  {:name :transition/operator-refund,
+   :actor :actor.role/operator,
+   :actions
+   [{:name :action/cancel-booking}
+    {:name :action/calculate-full-refund}
+    {:name :action/stripe-refund-payment}],
+   :from :state/paid,
+   :to :state/cancelled}],
+ :notifications
+ [{:name :notification/monthly-charges-updated,
+   :on :transition/update-charges,
+   :to :actor.role/customer,
+   :template :monthly-charges-updated}
+  {:name :notification/monthly-payment-taken,
+   :on :transition/auto-payment,
+   :to :actor.role/customer,
+   :template :monthly-payment-taken}
+  {:name :notification/monthly-payment-taken-manual,
+   :on :transition/confirm-manual-payment,
+   :to :actor.role/customer,
+   :template :monthly-payment-taken}
+  ;; Sent only if the automatic payment has not moved the transaction on.
+  {:name :notification/monthly-payment-wanted,
+   :on :transition/mark-pending-payment,
+   :to :actor.role/customer,
+   :template :monthly-payment-wanted,
+   :at
+   {:fn/plus
+    [{:fn/timepoint [:time/first-entered-state :state/pending-payment]}
+     {:fn/period ["PT15M"]}]}}
+  {:name :notification/monthly-payment-failed-provider,
+   :on :transition/mark-pending-payment,
+   :to :actor.role/provider,
+   :template :monthly-payment-failed-provider,
+   :at
+   {:fn/plus
+    [{:fn/timepoint [:time/first-entered-state :state/pending-payment]}
+     {:fn/period ["PT15M"]}]}}
+  {:name :notification/monthly-money-paid,
+   :on :transition/complete,
+   :to :actor.role/provider,
+   :template :monthly-money-paid}
+  {:name :notification/monthly-money-paid-operator-complete,
+   :on :transition/operator-complete,
+   :to :actor.role/provider,
+   :template :monthly-money-paid}
+  {:name :notification/monthly-cancelled-by-customer,
+   :on :transition/customer-cancel,
+   :to :actor.role/provider,
+   :template :monthly-cancelled-provider}
+  {:name :notification/monthly-cancelled-by-provider,
+   :on :transition/provider-cancel,
+   :to :actor.role/customer,
+   :template :monthly-cancelled-customer}
+  {:name :notification/monthly-cancelled-unpaid,
+   :on :transition/provider-cancel-unpaid,
+   :to :actor.role/customer,
+   :template :monthly-cancelled-customer}
+  {:name :notification/monthly-cancelled-unpaid-by-operator-customer,
+   :on :transition/operator-cancel-unpaid,
+   :to :actor.role/customer,
+   :template :monthly-cancelled-customer}
+  {:name :notification/monthly-cancelled-unpaid-by-operator-provider,
+   :on :transition/operator-cancel-unpaid,
+   :to :actor.role/provider,
+   :template :monthly-cancelled-provider}
+  {:name :notification/monthly-cancelled-by-operator-customer,
+   :on :transition/operator-cancel,
+   :to :actor.role/customer,
+   :template :monthly-cancelled-customer}
+  {:name :notification/monthly-cancelled-by-operator-provider,
+   :on :transition/operator-cancel,
+   :to :actor.role/provider,
+   :template :monthly-cancelled-provider}
+  {:name :notification/monthly-refunded-customer,
+   :on :transition/operator-refund,
+   :to :actor.role/customer,
+   :template :monthly-cancelled-customer}
+  {:name :notification/monthly-refunded-provider,
+   :on :transition/operator-refund,
+   :to :actor.role/provider,
+   :template :monthly-cancelled-provider}]}

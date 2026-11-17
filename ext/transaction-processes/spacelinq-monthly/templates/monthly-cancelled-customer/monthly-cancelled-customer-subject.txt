@@ -1,0 +1,1 @@
+A month of your storage booking at {{transaction.listing.title}} was cancelled

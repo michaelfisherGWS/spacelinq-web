@@ -173,6 +173,25 @@ const getSpaceLinqAddOnLineItems = (publicData, orderData, days, currency) => {
 };
 exports.getSpaceLinqAddOnLineItems = getSpaceLinqAddOnLineItems;
 
+/**
+ * SpaceLinq: length in days of the whole agreement when the order is one
+ * monthly instalment of it. The instalment must sit inside the agreement.
+ *
+ * @param {Object} orderData order data (agreement: { start, end }, bookingStart, bookingEnd)
+ * @returns {number|null} agreement length in days, or null if this is not a valid instalment
+ */
+const getSpaceLinqAgreementDays = orderData => {
+  const { agreement, bookingStart, bookingEnd } = orderData || {};
+  const toTime = v => (v instanceof Date ? v.getTime() : v ? new Date(v).getTime() : NaN);
+  const [aStart, aEnd, bStart, bEnd] = [agreement?.start, agreement?.end, bookingStart, bookingEnd].map(toTime);
+  if ([aStart, aEnd, bStart, bEnd].some(Number.isNaN)) {
+    return null;
+  }
+  const isInside = aStart <= bStart && bEnd <= aEnd && bStart < bEnd;
+  return isInside ? Math.round((aEnd - aStart) / (24 * 60 * 60 * 1000)) : null;
+};
+exports.getSpaceLinqAgreementDays = getSpaceLinqAgreementDays;
+
 exports.transactionLineItems = (listing, orderData, providerCommission, customerCommission) => {
   const publicData = listing.attributes.publicData;
   // Note: the unitType needs to be one of the following:
@@ -276,7 +295,10 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   // SpaceLinq: enforce the provider's minimum term (30 days per month)
   const minTermMonths = Number(publicData?.pricing?.minTermMonths) || 0;
   const minDays = minTermMonths > 0 ? Math.floor(minTermMonths * DAYS_PER_MONTH) : 0;
-  if (bookedDays && minDays && bookedDays < minDays) {
+  // A monthly instalment covers one month of a longer agreement:
+  // the minimum term applies to the whole agreement, not to the instalment.
+  const termDays = getSpaceLinqAgreementDays(orderData) || bookedDays;
+  if (bookedDays && minDays && termDays < minDays) {
     const message = `Error: this listing has a minimum term of ${minDays} days.`;
     const error = new Error(message);
     error.status = 400;
