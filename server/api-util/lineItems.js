@@ -197,7 +197,18 @@ const getSpaceLinqAgreementDays = orderData => {
 };
 exports.getSpaceLinqAgreementDays = getSpaceLinqAgreementDays;
 
-exports.transactionLineItems = (listing, orderData, providerCommission, customerCommission) => {
+/**
+ * SpaceLinq: the fifth argument is set by server code only (never from the request):
+ * - skipMinTerm: the order is one month of an agreement that was already accepted
+ * - extraLineItems: validated service charges to add before the commissions
+ */
+exports.transactionLineItems = (
+  listing,
+  orderData,
+  providerCommission,
+  customerCommission,
+  options = {}
+) => {
   const publicData = listing.attributes.publicData;
   // Note: the unitType needs to be one of the following:
   // day, night, hour, fixed, or item (these are related to payment processes)
@@ -303,7 +314,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   // A monthly instalment covers one month of a longer agreement:
   // the minimum term applies to the whole agreement, not to the instalment.
   const termDays = getSpaceLinqAgreementDays(orderData) || bookedDays;
-  if (bookedDays && minDays && termDays < minDays) {
+  if (bookedDays && minDays && termDays < minDays && !options.skipMinTerm) {
     const message = `Error: this listing has a minimum term of ${minDays} days.`;
     const error = new Error(message);
     error.status = 400;
@@ -316,6 +327,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
     order,
     ...extraLineItems,
     ...addOnLineItems,
+    ...(options.extraLineItems || []),
     ...getProviderCommissionMaybe(providerCommission, order, currency),
     ...getCustomerCommissionMaybe(customerCommission, order, currency),
   ];

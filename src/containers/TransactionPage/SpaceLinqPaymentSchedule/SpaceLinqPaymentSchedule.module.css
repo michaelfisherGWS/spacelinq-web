@@ -75,3 +75,46 @@
   color: var(--colorFail);
   margin: 8px 0 0 0;
 }
+
+.rowAction {
+  flex: 1 1 100%;
+}
+
+.chargeForm {
+  flex: 1 1 100%;
+  margin-top: 8px;
+  padding: 12px;
+  background-color: var(--colorGrey50);
+  border-radius: var(--borderRadiusMedium);
+}
+
+.chargeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px 0;
+  padding: 0;
+}
+
+.chargeNoteRow {
+  display: block;
+  margin: 0 0 12px 0;
+  padding: 0;
+}
+
+.chargeLabel {
+  composes: marketplaceSmallFontStyles from global;
+  font-weight: var(--fontWeightRegular);
+  margin: 0;
+}
+
+.chargeInput {
+  flex: 0 0 96px;
+  width: 96px;
+  text-align: right;
+}
+
+.chargeNoteInput {
+  width: 100%;
+}

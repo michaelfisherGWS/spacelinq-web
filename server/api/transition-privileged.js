@@ -20,9 +20,22 @@ const {
   fetchCommission,
 } = require('../api-util/sdk');
 
+const {
+  MONTHLY_PROCESS_NAME,
+  UPDATE_CHARGES_TRANSITION,
+  validateServiceCharges,
+  getServiceChargeLineItems,
+} = require('../api-util/spaceLinqCharges');
+
 const { Money } = sharetribeSdk.types;
 
-const transactionPromise = (sdk, id) => sdk.transactions.show({ id, include: ['listing'] });
+const transactionPromise = (sdk, id) =>
+  sdk.transactions.show({ id, include: ['listing', 'booking'] });
+const getBookingRelationShip = transactionShowAPIData => {
+  const { data, included } = transactionShowAPIData;
+  const bookingId = data?.relationships?.booking?.data?.id?.uuid;
+  return bookingId ? included.find(i => i.type === 'booking' && i.id.uuid === bookingId) : null;
+};
 const getListingRelationShip = transactionShowAPIData => {
   const { data, included } = transactionShowAPIData;
   const { relationships } = data;
@@ -132,6 +145,8 @@ module.exports = (req, res) => {
   const transitionName = bodyParams.transition;
   let lineItems = null;
   let metadataMaybe = {};
+  // SpaceLinq: validated service charges, when a provider updates a monthly instalment
+  let spaceLinqCharges = null;
 
   Promise.all([transactionPromise(sdk, bodyParams?.id), fetchCommission(sdk)])
     .then(responses => {
@@ -154,17 +169,47 @@ module.exports = (req, res) => {
       const { providerCommission, customerCommission } =
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};
 
-      lineItems = transactionLineItems(
-        listing,
-        getFullOrderData(orderData, bodyParams, currency, existingOffers),
-        providerCommission,
-        customerCommission
-      );
+      const isSpaceLinqUpdateCharges =
+        transitionName === UPDATE_CHARGES_TRANSITION &&
+        transaction.attributes.processName === MONTHLY_PROCESS_NAME;
+
+      if (isSpaceLinqUpdateCharges) {
+        // The month's storage is priced again from its own booking, then the
+        // provider's service charges are added from the listing's rate card.
+        const booking = getBookingRelationShip(showTransactionResponse.data);
+        const publicData = listing.attributes.publicData;
+        spaceLinqCharges = validateServiceCharges(publicData, orderData);
+        lineItems = transactionLineItems(
+          listing,
+          {
+            bookingStart: booking.attributes.start,
+            bookingEnd: booking.attributes.end,
+            seats: booking.attributes.seats,
+            addOns: transaction.attributes.protectedData?.addOns,
+            currency,
+          },
+          providerCommission,
+          customerCommission,
+          {
+            skipMinTerm: true,
+            extraLineItems: getServiceChargeLineItems(publicData, spaceLinqCharges, currency),
+          }
+        );
+      } else {
+        lineItems = transactionLineItems(
+          listing,
+          getFullOrderData(orderData, bodyParams, currency, existingOffers),
+          providerCommission,
+          customerCommission
+        );
+      }
 
       // If the client sends expectedPayinTotal (checkout payment flows), ensure it
       assertExpectedPayinTotal(lineItems, orderData?.expectedPayinTotal);
 
-      metadataMaybe = getUpdatedMetadata(orderData, transitionName, existingMetadata);
+      metadataMaybe = spaceLinqCharges
+        ? {}
+        : getUpdatedMetadata(orderData, transitionName, existingMetadata);
 
       return getTrustedSdk(req, res, tokenStore);
     })
@@ -177,7 +222,16 @@ module.exports = (req, res) => {
       //   after a provider's offer, you can add that logic in this same function.
       const roleBasedBodyParams = getRoleBasedBodyParams(orderData, bodyParams);
       // Omit listingId from params (transition/request-payment-after-inquiry does not need it)
-      const { listingId, ...restParams } = roleBasedBodyParams?.params || {};
+      const { listingId, ...requestParams } = roleBasedBodyParams?.params || {};
+      // SpaceLinq: the stored record of service charges is the validated one
+      const restParams = spaceLinqCharges
+        ? {
+            protectedData: {
+              serviceCharges: spaceLinqCharges.serviceCharges,
+              otherCharge: spaceLinqCharges.otherCharge,
+            },
+          }
+        : requestParams;
 
       // Add lineItems to the body params
       const body = {

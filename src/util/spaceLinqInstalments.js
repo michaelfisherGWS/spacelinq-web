@@ -7,6 +7,7 @@
  * points back to it with `agreementId`.
  */
 import { denormalisedResponseEntities } from './data';
+import { transitionPrivileged } from './api';
 import { MONTHLY_PROCESS_NAME } from './spaceLinqBilling';
 
 export const instalmentTransitions = {
@@ -117,3 +118,101 @@ export const answerPendingInstalments = (sdk, agreementId, transition) =>
       Promise.resolve(0)
     );
   });
+
+export const SERVICE_CODE_PREFIX = 'line-item/service-';
+export const PAY_ERROR_NO_CARD = 'no-card';
+export const PAY_ERROR_CARD_FAILED = 'card-failed';
+
+const STRIPE_PAID_STATUSES = ['requires_capture', 'succeeded'];
+
+const payError = code => {
+  const error = new Error(code);
+  error.code = code;
+  return error;
+};
+
+/**
+ * Pay a monthly instalment by hand with the customer's saved card. Used when the
+ * automatic charge did not go through (for example after the card was replaced).
+ *
+ * @param {Object} sdk Sharetribe SDK
+ * @param {Object} stripe Stripe.js instance
+ * @param {Object} tx instalment transaction that is due for payment
+ * @returns {Promise} resolves when the instalment is paid
+ * @throws Error with code PAY_ERROR_NO_CARD or PAY_ERROR_CARD_FAILED
+ */
+export const payInstalmentNow = (sdk, stripe, tx) => {
+  const clientSecretOf = transaction =>
+    transaction?.attributes?.protectedData?.stripePaymentIntents?.default
+      ?.stripePaymentIntentClientSecret;
+
+  return sdk.currentUser
+    .show({ include: ['stripeCustomer.defaultPaymentMethod'] })
+    .then(response => {
+      const [currentUser] = denormalisedResponseEntities(response);
+      const paymentMethodId =
+        currentUser?.stripeCustomer?.defaultPaymentMethod?.attributes?.stripePaymentMethodId;
+      if (!paymentMethodId) {
+        throw payError(PAY_ERROR_NO_CARD);
+      }
+      const isInitiated = tx.attributes.lastTransition === t.INITIATE_MANUAL_PAYMENT;
+      const secretPromise = isInitiated
+        ? Promise.resolve(clientSecretOf(tx))
+        : sdk.transactions
+            .transition(
+              { id: tx.id, transition: t.INITIATE_MANUAL_PAYMENT, params: {} },
+              { expand: true }
+            )
+            .then(res => clientSecretOf(res.data.data));
+      return secretPromise.then(clientSecret => ({ clientSecret, paymentMethodId }));
+    })
+    .then(({ clientSecret, paymentMethodId }) =>
+      // A payment that was confirmed earlier (but not recorded) must not be confirmed twice.
+      stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) =>
+        STRIPE_PAID_STATUSES.includes(paymentIntent?.status)
+          ? paymentIntent
+          : stripe
+              .confirmCardPayment(clientSecret, { payment_method: paymentMethodId })
+              .then(result => {
+                if (result.error || !STRIPE_PAID_STATUSES.includes(result.paymentIntent?.status)) {
+                  throw payError(PAY_ERROR_CARD_FAILED);
+                }
+                return result.paymentIntent;
+              })
+      )
+    )
+    .then(() =>
+      sdk.transactions.transition({
+        id: tx.id,
+        transition: t.CONFIRM_MANUAL_PAYMENT,
+        params: {},
+      })
+    );
+};
+
+/**
+ * Provider sets the service charges of a scheduled instalment. This replaces any
+ * charges entered before. Prices come from the listing's rate card on the server.
+ *
+ * @param {Object} tx instalment transaction
+ * @param {Object} charges
+ * @param {Array<{key: string, quantity: number}>} charges.serviceCharges
+ * @param {{amount: number, note: string}|null} charges.otherCharge amount in cents
+ * @returns {Promise}
+ */
+export const updateInstalmentCharges = (tx, charges) =>
+  transitionPrivileged({
+    isSpeculative: false,
+    orderData: { serviceCharges: charges.serviceCharges, otherCharge: charges.otherCharge },
+    bodyParams: { id: tx.id, transition: t.UPDATE_CHARGES, params: {} },
+    queryParams: { expand: false },
+  });
+
+/**
+ * @param {Object} tx instalment transaction
+ * @returns {number} total of the service charges in the instalment, in cents
+ */
+export const serviceChargesTotal = tx =>
+  (tx?.attributes?.lineItems || [])
+    .filter(item => item.code.startsWith(SERVICE_CODE_PREFIX) && !item.reversal)
+    .reduce((sum, item) => sum + item.lineTotal.amount, 0);

@@ -282,7 +282,7 @@ export class TransactionPanelComponent extends Component {
               <SpaceLinqPaymentSchedule
                 agreementId={this.props.transactionId.uuid}
                 transactionRole={transactionRole}
-                timeZone={listing?.attributes?.availabilityPlan?.timezone}
+                listing={listing}
               />
             ) : null}
             <FeedSection
