@@ -126,3 +126,8 @@
     width: 241px;
   }
 }
+
+img.optionIcon {
+  width: 88px;
+  height: auto;
+}

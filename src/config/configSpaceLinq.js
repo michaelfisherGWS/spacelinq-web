@@ -109,7 +109,7 @@ export const storageUnits = [
   {
     key: 'garage',
     label: 'Garage',
-    icon: 'bay',
+    icon: 'garage',
     listingTypes: ['dedicated-space', 'quote-on-request'],
     dimensions: { length: 6000, width: 3000, height: 2400, maxWeight: null },
     description:
@@ -118,7 +118,7 @@ export const storageUnits = [
   {
     key: 'spare-room',
     label: 'Spare room or loft',
-    icon: 'floor',
+    icon: 'room',
     listingTypes: ['dedicated-space', 'quote-on-request'],
     dimensions: { length: 3000, width: 3000, height: 2400, maxWeight: null },
     description: 'An indoor room, loft or basement space, about 3 x 3 m, for boxes and furniture.',
@@ -126,7 +126,7 @@ export const storageUnits = [
   {
     key: 'shed',
     label: 'Shed or lock-up',
-    icon: 'cage',
+    icon: 'shed',
     listingTypes: ['dedicated-space', 'quote-on-request'],
     dimensions: { length: 3000, width: 2400, height: 2100, maxWeight: null },
     description: 'A garden shed or small lock-up for tools, equipment and seasonal items.',
@@ -134,7 +134,7 @@ export const storageUnits = [
   {
     key: 'parking-space',
     label: 'Parking or driveway space',
-    icon: 'yard',
+    icon: 'parking',
     listingTypes: ['dedicated-space', 'quote-on-request'],
     dimensions: { length: 5400, width: 2400, height: null, maxWeight: null },
     description: 'An off-street space for a car, boat, caravan or trailer.',

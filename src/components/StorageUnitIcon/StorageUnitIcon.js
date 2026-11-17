@@ -1,7 +1,31 @@
 import React from 'react';
 import classNames from 'classnames';
 
+import palletImage from '../../assets/storage/pallet.jpg';
+import palletColdImage from '../../assets/storage/pallet-cold.jpg';
+import shelvingImage from '../../assets/storage/shelving.jpg';
+import floorImage from '../../assets/storage/floor.jpg';
+import bayImage from '../../assets/storage/bay.jpg';
+import cageImage from '../../assets/storage/cage.jpg';
+import yardImage from '../../assets/storage/yard.jpg';
+import roomImage from '../../assets/storage/room.jpg';
+
 import css from './StorageUnitIcon.module.css';
+
+// Illustrations for storage options. Options without one fall back to a line icon.
+const images = {
+  pallet: palletImage,
+  'pallet-cold': palletColdImage,
+  shelving: shelvingImage,
+  floor: floorImage,
+  bay: bayImage,
+  cage: cageImage,
+  yard: yardImage,
+  room: roomImage,
+};
+
+// Line icons used when an option has no drawing of its own yet.
+const iconAliases = { garage: 'bay', shed: 'cage', parking: 'yard', room: 'floor' };
 
 // Simple line icons for SpaceLinq storage options. Drawn on a 64x64 grid and
 // coloured with currentColor so they follow the surrounding text colour.
@@ -132,7 +156,18 @@ const paths = {
  */
 const StorageUnitIcon = props => {
   const { icon, className, title } = props;
-  const content = paths[icon];
+  const image = images[icon];
+  if (image) {
+    return (
+      <img
+        className={classNames(css.image, className)}
+        src={image}
+        alt={title || ''}
+        loading="lazy"
+      />
+    );
+  }
+  const content = paths[icon] || paths[iconAliases[icon]];
   if (!content) {
     return null;
   }

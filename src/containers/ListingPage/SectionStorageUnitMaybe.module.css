@@ -45,3 +45,12 @@
   color: var(--colorGrey500);
   font-size: 14px;
 }
+
+img.icon {
+  width: 140px;
+  height: auto;
+
+  @media (--viewportMedium) {
+    width: 200px;
+  }
+}

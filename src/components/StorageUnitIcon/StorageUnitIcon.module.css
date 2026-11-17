@@ -3,3 +3,13 @@
   width: 48px;
   height: 48px;
 }
+
+/* Illustrations keep their own shape, so callers set a width and the height follows. */
+.image {
+  display: block;
+  width: 96px;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorWhite);
+}

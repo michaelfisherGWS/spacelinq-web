@@ -74,3 +74,9 @@
   font-weight: var(--fontWeightMedium);
   opacity: 0.8;
 }
+
+img.storageUnitIcon {
+  width: 70%;
+  max-width: 260px;
+  height: auto;
+}
