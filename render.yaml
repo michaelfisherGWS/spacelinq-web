@@ -1,0 +1,46 @@
+# Render Blueprint for the SpaceLinq test site.
+# In Render: New > Blueprint > pick this repo. Render will ask for every
+# value marked "sync: false" - paste those from your own records.
+# Nothing secret is stored in this file.
+services:
+  - type: web
+    name: spacelinq-test
+    runtime: node
+    plan: free # change to "starter" (US$7/month) to stop it sleeping
+    region: singapore
+    branch: main
+    buildCommand: yarn install --production=false && yarn build
+    startCommand: yarn start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "24"
+      - key: REACT_APP_ENV
+        value: development
+      - key: REACT_APP_MARKETPLACE_NAME
+        value: SpaceLinq
+      - key: REACT_APP_SHARETRIBE_USING_SSL
+        value: "true"
+      - key: SERVER_SHARETRIBE_TRUST_PROXY
+        value: "true"
+      - key: REACT_APP_CSP
+        value: report
+      # Set after the first deploy to the onrender.com address, then redeploy.
+      - key: REACT_APP_MARKETPLACE_ROOT_URL
+        sync: false
+      # Values from Sharetribe Console > Build > Advanced > Applications.
+      - key: REACT_APP_SHARETRIBE_SDK_CLIENT_ID
+        sync: false
+      - key: SHARETRIBE_SDK_CLIENT_SECRET
+        sync: false
+      # SpaceLinq Stripe account publishable key (pk_test_...).
+      - key: REACT_APP_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      # Password-protects the test site so only invited testers can see it.
+      - key: BASIC_AUTH_USERNAME
+        sync: false
+      - key: BASIC_AUTH_PASSWORD
+        sync: false
