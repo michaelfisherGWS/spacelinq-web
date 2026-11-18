@@ -364,10 +364,25 @@ const sendInstantBookingSiteDetailsMaybe = (txId, config) => (dispatch, getState
   if (!wasInstant || alreadySent) {
     return Promise.resolve();
   }
-  const listingId = transaction?.relationships?.listing?.data?.id;
-  return sendUnlockedSiteDetails(sdk, txId, listingId).then(() =>
-    dispatch(fetchMessagesThunk({ txId, page: 1, config }))
-  );
+  // Only the provider can read the site details. The current user may not be in the
+  // store yet when the page is opened from a link, so ask the API in that case.
+  const providerId = transaction?.relationships?.provider?.data?.id?.uuid;
+  const knownUserId = state.user?.currentUser?.id?.uuid;
+  const userIdPromise = knownUserId
+    ? Promise.resolve(knownUserId)
+    : sdk.currentUser
+        .show()
+        .then(response => response.data.data.id.uuid)
+        .catch(() => null);
+  return userIdPromise.then(userId => {
+    if (!userId || userId !== providerId) {
+      return null;
+    }
+    const listingId = transaction?.relationships?.listing?.data?.id;
+    return sendUnlockedSiteDetails(sdk, txId, listingId).then(() =>
+      dispatch(fetchMessagesThunk({ txId, page: 1, config }))
+    );
+  });
 };
 
 ////////////////////
@@ -1324,9 +1339,7 @@ export const loadData = (params, search, config) => (dispatch, getState) => {
     dispatch(fetchMessagesThunk({ txId, page: 1, config })),
     dispatch(fetchTransitionsThunk({ id: txId })),
   ]).then(result => {
-    if (txRole === 'provider') {
-      dispatch(sendInstantBookingSiteDetailsMaybe(txId, config));
-    }
+    dispatch(sendInstantBookingSiteDetailsMaybe(txId, config));
     return result;
   });
 };

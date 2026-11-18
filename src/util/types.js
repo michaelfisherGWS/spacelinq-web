@@ -398,6 +398,8 @@ propTypes.defaultPaymentMethod = shape({
 
 export const LINE_ITEM_NIGHT = 'line-item/night';
 export const LINE_ITEM_DAY = 'line-item/day';
+// SpaceLinq: whole months charged at the listing's flat monthly price
+export const LINE_ITEM_MONTH = 'line-item/month';
 export const LINE_ITEM_HOUR = 'line-item/hour';
 export const LINE_ITEM_FIXED = 'line-item/fixed';
 export const LINE_ITEM_ITEM = 'line-item/item';
@@ -412,6 +414,7 @@ export const LINE_ITEM_PICKUP_FEE = 'line-item/pickup-fee';
 export const LINE_ITEMS = [
   LINE_ITEM_NIGHT,
   LINE_ITEM_DAY,
+  LINE_ITEM_MONTH,
   LINE_ITEM_HOUR,
   LINE_ITEM_FIXED,
   LINE_ITEM_ITEM,
@@ -426,6 +429,7 @@ export const LINE_ITEMS = [
 export const LISTING_UNIT_TYPES = [
   LINE_ITEM_NIGHT,
   LINE_ITEM_DAY,
+  LINE_ITEM_MONTH,
   LINE_ITEM_HOUR,
   LINE_ITEM_FIXED,
   LINE_ITEM_ITEM,

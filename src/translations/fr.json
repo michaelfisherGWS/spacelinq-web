@@ -1668,5 +1668,7 @@
   "SpaceLinqPricingForm.noticeDays": "Notice a customer must give to end an ongoing booking",
   "StripePaymentForm.spaceLinqInstantSubmit": "Book and pay {totalPrice}",
   "StripePaymentForm.spaceLinqInstantFinePrint": "Your booking is confirmed and your card is charged straight away.",
-  "TransactionPage.ActivityFeed.spaceLinqInstantConfirmed": "The booking was confirmed instantly and paid."
+  "TransactionPage.ActivityFeed.spaceLinqInstantConfirmed": "The booking was confirmed instantly and paid.",
+  "OrderBreakdown.spaceLinqMonth": "{unitPrice} × {quantity, plural, one {# month} other {# months}}",
+  "OrderBreakdown.spaceLinqMonthUnits": "{unitPrice} × {quantity, plural, one {# month} other {# months}} × {seats, plural, one {# unit} other {# units}}"
 }

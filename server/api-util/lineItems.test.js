@@ -957,3 +957,96 @@ describe('SpaceLinq goods insurance line item', () => {
     );
   });
 });
+
+describe('SpaceLinq flat monthly pricing', () => {
+  const { Money } = types;
+  const momentTz = require('moment-timezone');
+  const timezone = 'Pacific/Auckland';
+  const at = s => momentTz.tz(s, timezone).toDate();
+  const listing = pricing => ({
+    attributes: {
+      // $180.00 a month is $5.92 a day
+      price: new Money(592, 'NZD'),
+      availabilityPlan: { timezone },
+      publicData: { unitType: 'day', pricing },
+    },
+  });
+  const monthly = { model: 'fixed-monthly', cycle: 'month', rate: 18000 };
+
+  it('charges the flat monthly price for a whole month, whatever its length', () => {
+    const february = transactionLineItems(
+      listing(monthly),
+      { bookingStart: at('2027-02-23'), bookingEnd: at('2027-03-23') },
+      { percentage: 10 },
+      null
+    );
+    expect(february[0].code).toEqual('line-item/month');
+    expect(february[0].unitPrice.amount).toEqual(18000);
+    expect([february[0].units, february[0].seats]).toEqual([1, 1]);
+    // Commission is on the flat price
+    expect(february.find(i => i.code === 'line-item/provider-commission').unitPrice.amount).toEqual(
+      18000
+    );
+
+    const december = transactionLineItems(
+      listing(monthly),
+      { bookingStart: at('2026-12-23'), bookingEnd: at('2027-01-23') },
+      null,
+      null
+    );
+    expect(december[0].unitPrice.amount).toEqual(18000);
+  });
+
+  it('charges per unit per month when the listing is priced per square metre', () => {
+    const result = transactionLineItems(
+      listing({ model: 'per-m2', cycle: 'month', rate: 2000 }),
+      { bookingStart: at('2027-01-15'), bookingEnd: at('2027-03-15'), seats: 12 },
+      null,
+      null
+    );
+    expect([result[0].code, result[0].unitPrice.amount, result[0].units, result[0].seats]).toEqual([
+      'line-item/month',
+      2000,
+      2,
+      12,
+    ]);
+  });
+
+  it('keeps the daily rate for part months and weekly-priced listings', () => {
+    const partMonth = transactionLineItems(
+      listing(monthly),
+      { bookingStart: at('2027-01-15'), bookingEnd: at('2027-03-01') },
+      null,
+      null
+    );
+    expect(partMonth[0].code).toEqual('line-item/day');
+
+    const weekly = transactionLineItems(
+      listing({ model: 'per-pallet', cycle: 'week', rate: 1400 }),
+      { bookingStart: at('2027-01-15'), bookingEnd: at('2027-02-15'), seats: 5 },
+      null,
+      null
+    );
+    expect(weekly[0].code).toEqual('line-item/day');
+  });
+
+  it('charges monthly services and insurance flat for whole months', () => {
+    const result = transactionLineItems(
+      listing({
+        ...monthly,
+        addOns: [{ key: 'wms', price: 5000 }],
+        insurance: { rate: 150, maxValue: 50000000 },
+      }),
+      {
+        bookingStart: at('2027-02-23'),
+        bookingEnd: at('2027-03-23'),
+        addOns: ['wms'],
+        insurance: { value: 8000000 },
+      },
+      null,
+      null
+    );
+    expect(result.find(i => i.code === 'line-item/addon-wms').unitPrice.amount).toEqual(5000);
+    expect(result.find(i => i.code === 'line-item/insurance').unitPrice.amount).toEqual(12000);
+  });
+});

@@ -5,6 +5,7 @@ import {
   DATE_TYPE_TIME,
   DATE_TYPE_DATETIME,
   LINE_ITEM_DAY,
+  LINE_ITEM_MONTH,
   LINE_ITEM_HOUR,
   LINE_ITEM_NIGHT,
   propTypes,
@@ -123,7 +124,7 @@ const LineItemBookingPeriod = props => {
   const localStartDate = displayStart || start;
   const localEndDateRaw = displayEnd || end;
 
-  const showInclusiveEndDate = [LINE_ITEM_DAY].includes(code);
+  const showInclusiveEndDate = [LINE_ITEM_DAY, LINE_ITEM_MONTH].includes(code);
   const endDay = showInclusiveEndDate ? subtractTime(localEndDateRaw, 1, 'days') : localEndDateRaw;
 
   return (

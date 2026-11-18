@@ -8,6 +8,7 @@ const {
   calculateTotalFromLineItems,
 } = require('./lineItemHelpers');
 const { types } = require('sharetribe-flex-sdk');
+const momentTz = require('moment-timezone');
 const { Money } = types;
 
 /**
@@ -226,6 +227,55 @@ const getSpaceLinqInsuranceLineItems = (publicData, orderData, days, currency) =
 };
 exports.getSpaceLinqInsuranceLineItems = getSpaceLinqInsuranceLineItems;
 
+/**
+ * SpaceLinq: flat monthly pricing.
+ *
+ * When a listing is priced per month and the booking is a whole number of calendar
+ * months (15 Jan to 15 Feb, as every ongoing booking is), the customer is charged the
+ * monthly price itself, not a daily rate multiplied by the days in that month.
+ * Bookings that are not whole months, and listings priced per week, stay on the daily rate.
+ *
+ * @param {Object} listing listing with publicData.pricing ({ rate, cycle }) and availabilityPlan
+ * @param {Object} orderData order data (bookingStart, bookingEnd, seats)
+ * @param {string} currency
+ * @returns {{lineItem: Object, months: number}|null} the storage line item, or null to use the daily rate
+ */
+const getSpaceLinqFlatMonthly = (listing, orderData, currency) => {
+  const pricing = listing?.attributes?.publicData?.pricing;
+  const { bookingStart, bookingEnd, seats } = orderData || {};
+  const isMonthlyRate = pricing?.cycle === 'month' && Number.isInteger(pricing?.rate);
+  if (!isMonthlyRate || pricing.rate <= 0 || pricing.model === 'quote') {
+    return null;
+  }
+  if (!bookingStart || !bookingEnd) {
+    return null;
+  }
+  const timeZone = listing.attributes.availabilityPlan?.timezone || 'Etc/UTC';
+  const start = momentTz.tz(bookingStart, timeZone);
+  const end = momentTz.tz(bookingEnd, timeZone);
+  const months = end.diff(start, 'months');
+  const isWholeMonths =
+    months >= 1 &&
+    start
+      .clone()
+      .add(months, 'months')
+      .isSame(end);
+  if (!isWholeMonths) {
+    return null;
+  }
+  return {
+    months,
+    lineItem: {
+      code: 'line-item/month',
+      unitPrice: new Money(pricing.rate, currency),
+      units: months,
+      seats: Number.isInteger(seats) && seats > 0 ? seats : 1,
+      includeFor: ['customer', 'provider'],
+    },
+  };
+};
+exports.getSpaceLinqFlatMonthly = getSpaceLinqFlatMonthly;
+
 // SpaceLinq: the marketplace fee on services (optional monthly services and
 // 3PL service charges). Storage uses the commission set in Sharetribe Console.
 // Set to 7 for testing so it is easy to tell apart from the 10% storage fee.
@@ -381,18 +431,26 @@ exports.transactionLineItems = (
    * By default OrderBreakdown prints line items inside LineItemUnknownItemsMaybe if the lineItem code is not recognized. */
 
   const quantityOrSeats = !!units && !!seats ? { units, seats } : { quantity };
-  const order = {
-    code,
-    unitPrice,
-    ...quantityOrSeats,
-    includeFor: ['customer', 'provider'],
-  };
+  // SpaceLinq: whole months on a monthly-priced listing are charged the flat monthly price
+  const flatMonthly = ['day', 'night'].includes(unitType)
+    ? getSpaceLinqFlatMonthly(listing, orderData, currency)
+    : null;
+  const order = flatMonthly
+    ? flatMonthly.lineItem
+    : {
+        code,
+        unitPrice,
+        ...quantityOrSeats,
+        includeFor: ['customer', 'provider'],
+      };
 
   // Let's keep the base price (order) as first line item and provider and customer commissions as last.
   // Note: the order matters only if OrderBreakdown component doesn't recognize line-item.
   // SpaceLinq: optional services, pro-rata for the number of booked days.
   const bookedDays = ['day', 'night'].includes(unitType) ? units || quantity : null;
-  const addOnLineItems = getSpaceLinqAddOnLineItems(publicData, orderData, bookedDays, currency);
+  // Monthly services follow the storage: flat for whole months, pro-rata by day otherwise.
+  const serviceDays = flatMonthly ? flatMonthly.months * DAYS_PER_MONTH : bookedDays;
+  const addOnLineItems = getSpaceLinqAddOnLineItems(publicData, orderData, serviceDays, currency);
 
   // SpaceLinq: enforce the provider's minimum term (30 days per month)
   const minTermMonths = Number(publicData?.pricing?.minTermMonths) || 0;
@@ -412,7 +470,7 @@ exports.transactionLineItems = (
   const insuranceLineItems = getSpaceLinqInsuranceLineItems(
     publicData,
     orderData,
-    bookedDays,
+    serviceDays,
     currency
   );
   const serviceLineItems = [

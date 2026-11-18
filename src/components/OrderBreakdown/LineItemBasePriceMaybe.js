@@ -62,7 +62,18 @@ const LineItemBasePriceMaybe = props => {
   const unitPrice = unitPurchase ? formatMoney(intl, unitPurchase.unitPrice) : null;
   const total = unitPurchase ? formatMoney(intl, unitPurchase.lineTotal) : null;
 
-  const message = unitPurchase?.seats ? (
+  // SpaceLinq: whole months at the flat monthly price, e.g. "$180.00 × 1 month"
+  const isMonthly = code === 'line-item/month';
+  const message = isMonthly ? (
+    <FormattedMessage
+      id={
+        unitPurchase?.seats > 1
+          ? 'OrderBreakdown.spaceLinqMonthUnits'
+          : 'OrderBreakdown.spaceLinqMonth'
+      }
+      values={{ unitPrice, quantity, seats: unitPurchase?.seats }}
+    />
+  ) : unitPurchase?.seats ? (
     <FormattedMessage
       // SpaceLinq: daily bookings count storage units (pallets, m²), not seats
       id={isDaily ? 'OrderBreakdown.spaceLinqDayUnits' : `${translationKey}Seats`}
