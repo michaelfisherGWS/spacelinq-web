@@ -75,8 +75,14 @@ const LineItemBasePriceMaybe = props => {
     />
   ) : unitPurchase?.seats ? (
     <FormattedMessage
-      // SpaceLinq: daily bookings count storage units (pallets, m²), not seats
-      id={isDaily ? 'OrderBreakdown.spaceLinqDayUnits' : `${translationKey}Seats`}
+      // SpaceLinq: bookings count storage units (pallets, m², spaces), not seats
+      id={
+        isDaily
+          ? 'OrderBreakdown.spaceLinqDayUnits'
+          : isHourly
+          ? 'OrderBreakdown.spaceLinqHourUnits'
+          : `${translationKey}Seats`
+      }
       values={{ unitPrice, quantity, seats: unitPurchase.seats }}
     />
   ) : (

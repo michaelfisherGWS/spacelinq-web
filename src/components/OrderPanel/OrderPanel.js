@@ -545,6 +545,8 @@ const OrderPanel = props => {
         ) : showBookingTimeForm ? (
           <BookingTimeForm
             seatsEnabled={seatsEnabled}
+            instantBooking={publicData?.pricing?.instantBooking === true}
+            quantityLabel={spaceLinqPricingModels[(publicData?.pricing?.model)]?.quantityLabel}
             className={css.bookingForm}
             formId="OrderPanelBookingTimeForm"
             dayCountAvailableForBooking={dayCountAvailableForBooking}

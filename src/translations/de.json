@@ -1601,6 +1601,7 @@
   "ListingPage.accessHours": "Access hours: {hours}",
   "ListingPage.minTerm": "Minimum term: {months, plural, one {# month} other {# months}}",
   "OrderBreakdown.spaceLinqDayUnits": "{unitPrice} × {quantity, number} {quantity, plural, one {Tag} other {Tage}} × {seats, number} {seats, plural, one {Einheit} other {Einheiten}}",
+  "OrderBreakdown.spaceLinqHourUnits": "{unitPrice} × {quantity, number} {quantity, plural, one {hour} other {hours}} × {seats, number} {seats, plural, one {unit} other {units}}",
   "InboxPage.spaceLinqQuantity": "Menge: {seats}",
   "EditListingAvailabilityPanel.WeeklyCalendar.spaceLinqAvailable": "{seats} verfügbar",
   "EditListingWizard.tabLabelStorageOption": "Type of space",

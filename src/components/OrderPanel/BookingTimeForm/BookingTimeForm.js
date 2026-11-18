@@ -102,6 +102,9 @@ export const BookingTimeForm = props => {
     dayCountAvailableForBooking,
     marketplaceName,
     seatsEnabled,
+    // SpaceLinq: what a bookable unit is called, and whether bookings confirm instantly
+    quantityLabel,
+    instantBooking = false,
     isPriceVariationsInUse,
     priceVariants = [],
     priceVariantFieldComponent: PriceVariantFieldComponent,
@@ -214,7 +217,7 @@ export const BookingTimeForm = props => {
                 id="seats"
                 disabled={!startTime}
                 showLabelAsDisabled={!startTime}
-                label={intl.formatMessage({ id: 'BookingTimeForm.seatsTitle' })}
+                label={quantityLabel || intl.formatMessage({ id: 'BookingTimeForm.seatsTitle' })}
                 className={css.fieldSeats}
                 onChange={values => {
                   onHandleFetchLineItems({
@@ -264,7 +267,13 @@ export const BookingTimeForm = props => {
                 inProgress={fetchLineItemsInProgress}
                 disabled={submitDisabled}
               >
-                <FormattedMessage id="BookingTimeForm.requestToBook" />
+                <FormattedMessage
+                  id={
+                    instantBooking
+                      ? 'BookingDatesForm.spaceLinqBookNow'
+                      : 'BookingTimeForm.requestToBook'
+                  }
+                />
               </PrimaryButton>
             </div>
             <FinePrint payoutDetailsWarning={payoutDetailsWarning} isOwnListing={isOwnListing} />
