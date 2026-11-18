@@ -4,6 +4,8 @@ import classNames from 'classnames';
 import { useIntl } from '../../../util/reactIntl';
 import { propTypes } from '../../../util/types';
 import { formatMoney } from '../../../util/currency';
+import { getDisplayedListingPrice } from '../../../util/spacelinqPricing';
+import { types as sdkTypes } from '../../../util/sdkLoader';
 import { ensureListing } from '../../../util/data';
 import { isPriceVariationsEnabled, requireListingImage } from '../../../util/configHelpers';
 
@@ -11,11 +13,15 @@ import { AspectRatioWrapper, ResponsiveImage, ListingCardThumbnail } from '../..
 
 import css from './SearchMapInfoCard.module.css';
 
+const { Money } = sdkTypes;
+
 // ListingCard is the listing info without overlayview or carousel controls
 const ListingCard = props => {
   const { className, clickHandler, intl, isInCarousel, listing, urlToListing, config } = props;
 
-  const { title, price, publicData } = listing.attributes;
+  const { title, publicData } = listing.attributes;
+  // SpaceLinq: show the listed price, not the daily equivalent stored on the listing
+  const price = getDisplayedListingPrice(listing.attributes, Money);
   const { cardStyle } = publicData || {};
   const formattedPrice =
     price && price.currency === config.currency

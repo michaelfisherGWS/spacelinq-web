@@ -111,3 +111,19 @@ export const getSpaceLinqDisplayPrice = publicData => {
     : null;
   return { amount: pricing.rate, perUnit, isFrom: pricing.model === 'quote', shortStay };
 };
+
+/**
+ * The price to show for a listing wherever a single amount is displayed (cards,
+ * map pins): the provider's own listed amount for SpaceLinq listings, otherwise
+ * the listing price. Bookable SpaceLinq listings store a daily equivalent as
+ * their listing price, which customers are never quoted.
+ *
+ * @param {Object} attributes - listing attributes ({ price, publicData })
+ * @param {Function} Money - sdk Money constructor
+ * @returns {Money|null}
+ */
+export const getDisplayedListingPrice = (attributes, Money) => {
+  const { price, publicData } = attributes || {};
+  const spaceLinqPrice = getSpaceLinqDisplayPrice(publicData);
+  return spaceLinqPrice && price ? new Money(spaceLinqPrice.amount, price.currency) : price || null;
+};

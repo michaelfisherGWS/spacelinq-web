@@ -4,10 +4,14 @@ import classNames from 'classnames';
 import { injectIntl, intlShape } from '../../../util/reactIntl';
 import { propTypes } from '../../../util/types';
 import { formatMoney } from '../../../util/currency';
+import { getDisplayedListingPrice } from '../../../util/spacelinqPricing';
+import { types as sdkTypes } from '../../../util/sdkLoader';
 import { ensureListing } from '../../../util/data';
 import { isPriceVariationsEnabled } from '../../../util/configHelpers';
 
 import css from './SearchMapPriceLabel.module.css';
+
+const { Money } = sdkTypes;
 
 /**
  * SearchMapPriceLabel component
@@ -47,7 +51,9 @@ class SearchMapPriceLabel extends Component {
       config,
     } = this.props;
     const currentListing = ensureListing(listing);
-    const { price, publicData, title } = currentListing.attributes;
+    const { publicData, title } = currentListing.attributes;
+    // SpaceLinq: show the listed price, not the daily equivalent stored on the listing
+    const price = getDisplayedListingPrice(currentListing.attributes, Money);
 
     // Create formatted price if currency is known or alternatively show just the unknown currency.
     const formattedPrice =

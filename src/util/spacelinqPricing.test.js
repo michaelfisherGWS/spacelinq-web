@@ -96,3 +96,28 @@ describe('daily pricing', () => {
     ).toEqual({ amount: 2500, perUnit: 'per space / day', isFrom: false, shortStay: null });
   });
 });
+
+describe('getDisplayedListingPrice', () => {
+  const { getDisplayedListingPrice } = require('./spacelinqPricing');
+  class Money {
+    constructor(amount, currency) {
+      this.amount = amount;
+      this.currency = currency;
+    }
+  }
+  it('shows the listed monthly price in place of the stored daily equivalent', () => {
+    const shown = getDisplayedListingPrice(
+      {
+        price: new Money(592, 'NZD'),
+        publicData: { pricing: { model: 'per-space', cycle: 'month', rate: 18000 } },
+      },
+      Money
+    );
+    expect([shown.amount, shown.currency]).toEqual([18000, 'NZD']);
+  });
+  it('keeps the listing price when there is no SpaceLinq pricing', () => {
+    const price = new Money(5000, 'NZD');
+    expect(getDisplayedListingPrice({ price, publicData: {} }, Money)).toBe(price);
+    expect(getDisplayedListingPrice({ publicData: {} }, Money)).toBe(null);
+  });
+});
