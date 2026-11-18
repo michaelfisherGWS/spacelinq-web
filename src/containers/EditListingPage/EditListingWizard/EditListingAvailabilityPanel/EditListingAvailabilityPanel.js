@@ -251,13 +251,21 @@ const EditListingAvailabilityPanel = props => {
 
   // SpaceLinq: simple setup (capacity + access hours) generates the availability plan
   const isSpaceLinq = isSpaceLinqListingType(listingType);
-  const isHourlySpace = listingType === HOURLY_LISTING_TYPE;
+  // Regular blocks: hours for space booked by the hour, whole days for space booked by the day only.
+  // Monthly and ongoing storage is continuous, so it has none.
+  const blockKind =
+    listingType === HOURLY_LISTING_TYPE
+      ? 'hours'
+      : isSpaceLinq && listingAttributes?.publicData?.pricing?.cycle === 'day'
+      ? 'days'
+      : null;
   const [spaceLinqSaved, setSpaceLinqSaved] = useState(false);
   const handleSpaceLinqSubmit = values => {
     const capacity = useMultipleSeats ? Number(values.capacity) : 1;
     const timezone = listingAttributes?.availabilityPlan?.timezone || SPACELINQ_DEFAULT_TIMEZONE;
-    // Space booked by the hour can have regular hours when it cannot be booked
-    const blockedHours = isHourlySpace ? blockedHoursFromFormValues(values) : null;
+    const blockedHours = blockKind
+      ? blockedHoursFromFormValues(values, blockKind === 'days')
+      : null;
     return onSubmit({
       ...createAvailabilityPlanForSpaceLinq(capacity, timezone, blockedHours),
       publicData: { accessHours: values.accessHours || '', blockedHours },
@@ -329,7 +337,7 @@ const EditListingAvailabilityPanel = props => {
         <SpaceLinqAvailabilityForm
           listingType={listingType}
           pricingModel={listingAttributes?.publicData?.pricing?.model}
-          isHourly={isHourlySpace}
+          blockKind={blockKind}
           initialValues={{
             capacity: capacityFromPlan(listingAttributes?.availabilityPlan) || '',
             accessHours: listingAttributes?.publicData?.accessHours || '',

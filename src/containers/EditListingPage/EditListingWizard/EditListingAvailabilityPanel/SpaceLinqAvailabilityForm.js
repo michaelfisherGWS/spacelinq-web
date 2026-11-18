@@ -91,11 +91,17 @@ export const blockedHoursToFormValues = blockedHours => {
  * Blocked hours to save, from form values.
  *
  * @param {Object} values - form values
+ * @param {boolean} [wholeDays] - block the chosen days entirely
  * @returns {Object|null}
  */
-export const blockedHoursFromFormValues = values =>
+export const blockedHoursFromFormValues = (values, wholeDays = false) =>
   values?.blockMode === 'block'
-    ? validBlockedHours({ days: values.blockDays, from: values.blockFrom, to: values.blockTo })
+    ? validBlockedHours({
+        days: values.blockDays,
+        // Space booked by the day is blocked for the whole day
+        from: wholeDays ? '00:00' : values.blockFrom,
+        to: wholeDays ? '24:00' : values.blockTo,
+      })
     : null;
 
 /**
@@ -117,7 +123,10 @@ export const capacityFromPlan = availabilityPlan => {
  */
 const SpaceLinqAvailabilityForm = props => {
   const intl = useIntl();
-  const { listingType, pricingModel, isHourly } = props;
+  // blockKind: 'hours' for space booked by the hour, 'days' for space booked by the day only
+  const { listingType, pricingModel, blockKind } = props;
+  const isHourly = blockKind === 'hours';
+  const canBlock = ['hours', 'days'].includes(blockKind);
   const model = pricingModel || defaultPricingModelForListingType[listingType];
   const capacityLabel = pricingModels[model]?.capacityLabel;
   const isWholeSpace = !capacityLabel;
@@ -128,7 +137,7 @@ const SpaceLinqAvailabilityForm = props => {
       // The parent builds initial values on each render; compare them by content
       initialValuesEqual={(a, b) => JSON.stringify(a) === JSON.stringify(b)}
       validate={values =>
-        isHourly && values.blockMode === 'block' && !blockedHoursFromFormValues(values)
+        canBlock && values.blockMode === 'block' && !blockedHoursFromFormValues(values, !isHourly)
           ? { blockMode: intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockInvalid' }) }
           : {}
       }
@@ -163,7 +172,7 @@ const SpaceLinqAvailabilityForm = props => {
               id: 'SpaceLinqAvailabilityForm.accessHoursPlaceholder',
             })}
           />
-          {isHourly ? (
+          {canBlock ? (
             <>
               <FieldSelect
                 id="SpaceLinqAvailabilityForm.blockMode"
@@ -172,10 +181,18 @@ const SpaceLinqAvailabilityForm = props => {
                 label={intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockMode' })}
               >
                 <option value="any">
-                  {intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockMode.any' })}
+                  {intl.formatMessage({
+                    id: isHourly
+                      ? 'SpaceLinqAvailabilityForm.blockMode.any'
+                      : 'SpaceLinqAvailabilityForm.blockMode.anyDay',
+                  })}
                 </option>
                 <option value="block">
-                  {intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockMode.block' })}
+                  {intl.formatMessage({
+                    id: isHourly
+                      ? 'SpaceLinqAvailabilityForm.blockMode.block'
+                      : 'SpaceLinqAvailabilityForm.blockMode.blockDays',
+                  })}
                 </option>
               </FieldSelect>
               {values.blockMode === 'block' ? (
@@ -199,32 +216,34 @@ const SpaceLinqAvailabilityForm = props => {
                       </label>
                     ))}
                   </div>
-                  <div className={css.hours}>
-                    <FieldSelect
-                      id="SpaceLinqAvailabilityForm.blockFrom"
-                      name="blockFrom"
-                      className={css.hour}
-                      label={intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockFrom' })}
-                    >
-                      {BLOCK_FROM_HOURS.map(h => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </FieldSelect>
-                    <FieldSelect
-                      id="SpaceLinqAvailabilityForm.blockTo"
-                      name="blockTo"
-                      className={css.hour}
-                      label={intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockTo' })}
-                    >
-                      {BLOCK_TO_HOURS.map(h => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </FieldSelect>
-                  </div>
+                  {isHourly ? (
+                    <div className={css.hours}>
+                      <FieldSelect
+                        id="SpaceLinqAvailabilityForm.blockFrom"
+                        name="blockFrom"
+                        className={css.hour}
+                        label={intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockFrom' })}
+                      >
+                        {BLOCK_FROM_HOURS.map(h => (
+                          <option key={h} value={h}>
+                            {h}
+                          </option>
+                        ))}
+                      </FieldSelect>
+                      <FieldSelect
+                        id="SpaceLinqAvailabilityForm.blockTo"
+                        name="blockTo"
+                        className={css.hour}
+                        label={intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockTo' })}
+                      >
+                        {BLOCK_TO_HOURS.map(h => (
+                          <option key={h} value={h}>
+                            {h}
+                          </option>
+                        ))}
+                      </FieldSelect>
+                    </div>
+                  ) : null}
                   {errors?.blockMode ? <p className={css.error}>{errors.blockMode}</p> : null}
                 </fieldset>
               ) : null}

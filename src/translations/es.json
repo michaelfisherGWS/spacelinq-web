@@ -1598,6 +1598,8 @@
   "SpaceLinqAvailabilityForm.save": "Save availability",
   "SpaceLinqAvailabilityForm.blockMode": "When can it be booked?",
   "SpaceLinqAvailabilityForm.blockMode.any": "Any time",
+  "SpaceLinqAvailabilityForm.blockMode.anyDay": "Any day",
+  "SpaceLinqAvailabilityForm.blockMode.blockDays": "Any day except regular days I block out",
   "SpaceLinqAvailabilityForm.blockMode.block": "Any time except regular hours I block out",
   "SpaceLinqAvailabilityForm.blockDays": "Not bookable on these days",
   "SpaceLinqAvailabilityForm.blockFrom": "From",

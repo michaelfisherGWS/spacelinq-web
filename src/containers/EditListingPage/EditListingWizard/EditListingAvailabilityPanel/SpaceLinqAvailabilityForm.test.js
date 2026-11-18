@@ -103,3 +103,16 @@ describe('blocked hours form values', () => {
     );
   });
 });
+
+describe('whole-day blocks for space booked by the day', () => {
+  it('blocks the chosen days entirely, whatever hours the form holds', () => {
+    const block = blockedHoursFromFormValues(
+      { blockMode: 'block', blockDays: ['mon', 'tue'], blockFrom: '08:00', blockTo: '17:00' },
+      true
+    );
+    expect(block).toEqual({ days: ['mon', 'tue'], from: '00:00', to: '24:00' });
+    const plan = createSpaceLinqAvailabilityPlan(4, 'Pacific/Auckland', block);
+    expect(entriesFor(plan, 'mon')).toEqual([]);
+    expect(entriesFor(plan, 'wed')).toEqual([['00:00', '00:00', 4]]);
+  });
+});
