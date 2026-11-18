@@ -844,6 +844,7 @@ export const CheckoutPageWithPayment = props => {
                   handleSubmit(values, process, props, stripe, submitting, setSubmitting)
                 }
                 inProgress={submitting}
+                isInstantBooking={listing?.attributes?.publicData?.pricing?.instantBooking === true}
                 formId="CheckoutPagePaymentForm"
                 providerDisplayName={providerDisplayName}
                 showInitialMessageInput={showInitialMessageInput}

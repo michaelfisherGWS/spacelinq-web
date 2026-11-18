@@ -1665,5 +1665,8 @@
   "SpaceLinqPricingForm.bookingRulesHeading": "Booking rules",
   "SpaceLinqPricingForm.instantBooking": "Instant booking: accept bookings automatically",
   "SpaceLinqPricingForm.instantBookingHelp": "Customers are confirmed and charged as soon as they pay, without waiting for you. Best for self-storage units and spaces that are always ready.",
-  "SpaceLinqPricingForm.noticeDays": "Notice a customer must give to end an ongoing booking"
+  "SpaceLinqPricingForm.noticeDays": "Notice a customer must give to end an ongoing booking",
+  "StripePaymentForm.spaceLinqInstantSubmit": "Book and pay {totalPrice}",
+  "StripePaymentForm.spaceLinqInstantFinePrint": "Your booking is confirmed and your card is charged straight away.",
+  "TransactionPage.ActivityFeed.spaceLinqInstantConfirmed": "The booking was confirmed instantly and paid."
 }

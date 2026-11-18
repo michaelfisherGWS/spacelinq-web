@@ -642,6 +642,7 @@ class StripePaymentForm extends Component {
       stripePublishableKey,
       marketplaceName,
       processName,
+      isInstantBooking = false, // SpaceLinq: confirmed and charged straight away
       isFuzzyLocation,
       transactionFieldConfigs = [],
       showTransactionFields,
@@ -892,7 +893,12 @@ class StripePaymentForm extends Component {
             inProgress={submitInProgress}
             disabled={submitDisabled}
           >
-            {billingDetailsNeeded ? (
+            {isInstantBooking ? (
+              <FormattedMessage
+                id="StripePaymentForm.spaceLinqInstantSubmit"
+                values={{ totalPrice: totalPriceMaybe }}
+              />
+            ) : billingDetailsNeeded ? (
               <FormattedMessage
                 id="StripePaymentForm.submitPaymentInfo"
                 values={{ totalPrice: totalPriceMaybe, isBooking: isBookingYesNo }}
@@ -906,10 +912,14 @@ class StripePaymentForm extends Component {
           </PrimaryButton>
           {!isDownload && (
             <p className={css.paymentInfo}>
-              <FormattedMessage
-                id="StripePaymentForm.submitConfirmPaymentFinePrint"
-                values={{ isBooking: isBookingYesNo, name: providerDisplayName }}
-              />
+              {isInstantBooking ? (
+                <FormattedMessage id="StripePaymentForm.spaceLinqInstantFinePrint" />
+              ) : (
+                <FormattedMessage
+                  id="StripePaymentForm.submitConfirmPaymentFinePrint"
+                  values={{ isBooking: isBookingYesNo, name: providerDisplayName }}
+                />
+              )}
             </p>
           )}
         </div>

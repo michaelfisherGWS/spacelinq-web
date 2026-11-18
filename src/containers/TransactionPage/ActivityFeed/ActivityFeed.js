@@ -105,8 +105,14 @@ const TransitionMessage = props => {
 
   // ActivityFeed messages are tied to transaction process and transitions.
   // However, in practice, transitions leading to same state have had the same message.
+  // SpaceLinq instant booking: nobody "accepted" it, the payment confirmed it.
+  const isInstantConfirmation = transitionName === 'transition/confirm-payment-instant';
   const defaultMessage = intl.formatMessage(
-    { id: `TransactionPage.ActivityFeed.${processName}.${nextState}` },
+    {
+      id: isInstantConfirmation
+        ? 'TransactionPage.ActivityFeed.spaceLinqInstantConfirmed'
+        : `TransactionPage.ActivityFeed.${processName}.${nextState}`,
+    },
     {
       actor,
       otherUsersName,
