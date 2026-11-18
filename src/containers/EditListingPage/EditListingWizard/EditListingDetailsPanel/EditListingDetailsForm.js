@@ -498,6 +498,8 @@ const EditListingDetailsForm = props => (
         ? listingTypesForSpaceCategory(selectableListingTypes, spaceCategory)
         : selectableListingTypes;
       const showListingTypeField = !useSpaceCategories || !!spaceCategory;
+      // SpaceLinq: nothing else is asked until the category has given a listing type
+      const showDescriptionField = showDescription && (!useSpaceCategories || !!listingType);
 
       const classes = classNames(css.root, className);
       const submitReady = (updated && pristine) || ready;
@@ -566,7 +568,7 @@ const EditListingDetailsForm = props => (
             />
           )}
 
-          {showDescription && isCompatibleCurrency && (
+          {showDescriptionField && isCompatibleCurrency && (
             <FieldTextInput
               id={`${formId}description`}
               name="description"

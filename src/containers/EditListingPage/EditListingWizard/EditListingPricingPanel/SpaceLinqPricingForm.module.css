@@ -127,3 +127,9 @@
   flex-direction: column;
   gap: 8px;
 }
+
+.radio {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+}

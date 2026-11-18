@@ -223,7 +223,13 @@ const SpaceLinqPricingForm = props => {
                 </legend>
                 {['monthly', 'daily'].map(t => (
                   <label key={t} className={css.cycleOption}>
-                    <Field name="stayType" component="input" type="radio" value={t} />
+                    <Field
+                      name="stayType"
+                      component="input"
+                      type="radio"
+                      value={t}
+                      className={css.radio}
+                    />
                     <span>
                       <FormattedMessage id={`SpaceLinqPricingForm.stayType.${t}`} />
                     </span>

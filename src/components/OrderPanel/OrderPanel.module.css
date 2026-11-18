@@ -195,6 +195,7 @@
   /* Layout */
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 4px;
   flex-shrink: 0;
@@ -283,5 +284,7 @@
 .shortStayPrice {
   composes: marketplaceSmallFontStyles from global;
   color: var(--colorGrey700);
-  margin: 4px 0 0 0;
+  margin: 0;
+  /* Sits on its own line under the main price */
+  flex-basis: 100%;
 }

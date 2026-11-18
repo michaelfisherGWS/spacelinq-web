@@ -997,6 +997,7 @@ export const BookingDatesForm = props => {
                         <label className={css.addOn}>
                           <input
                             {...input}
+                            className={css.checkbox}
                             onChange={e => {
                               input.onChange(e);
                               const current = values?.addOns || [];
@@ -1038,6 +1039,7 @@ export const BookingDatesForm = props => {
                     <label className={css.addOn}>
                       <input
                         {...input}
+                        className={css.checkbox}
                         onChange={e => {
                           input.onChange(e);
                           fetchWithInsurance({ insurance: e.target.checked });
@@ -1084,6 +1086,7 @@ export const BookingDatesForm = props => {
                           <label className={css.addOn}>
                             <input
                               {...input}
+                              className={css.checkbox}
                               onChange={e => {
                                 input.onChange(e);
                                 fetchWithInsurance({ insuranceDg: e.target.checked });
@@ -1156,6 +1159,7 @@ export const BookingDatesForm = props => {
                     <label className={css.addOn}>
                       <input
                         {...input}
+                        className={css.checkbox}
                         onChange={e => {
                           input.onChange(e);
                           fetchLineItems({
