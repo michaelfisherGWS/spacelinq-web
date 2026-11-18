@@ -156,6 +156,13 @@ export const spaceLinqConfirmInstant = body => {
   return post('/api/spacelinq/confirm-instant', body);
 };
 
+// SpaceLinq: schedule the later months of an ongoing booking after the first month is paid.
+//
+// See `server/api/spacelinq-schedule.js`.
+export const spaceLinqScheduleMonths = body => {
+  return post('/api/spacelinq/schedule', body);
+};
+
 // Create user with identity provider (e.g. Facebook or Google)
 //
 // If loginWithIdp api call fails and user can't authenticate to Marketplace API with idp
