@@ -345,6 +345,31 @@ const sendUnlockedSiteDetails = (sdk, txId, listingId) => {
     });
 };
 
+/**
+ * SpaceLinq instant booking: nobody clicks "accept", so the site details cannot be
+ * sent at that moment (only the provider can read them). They are sent the first
+ * time the provider opens the booking instead.
+ */
+const SITE_DETAILS_MESSAGE_START = 'Booking confirmed - here are the site details:';
+const INSTANT_TRANSITION = 'transition/confirm-payment-instant';
+const sendInstantBookingSiteDetailsMaybe = (txId, config) => (dispatch, getState, sdk) => {
+  const state = getState();
+  const transaction = state.marketplaceData?.entities?.transaction?.[txId.uuid];
+  const wasInstant = (transaction?.attributes?.transitions || []).some(
+    t => t.transition === INSTANT_TRANSITION
+  );
+  const alreadySent = (state.TransactionPage.messages || []).some(m =>
+    `${m.attributes?.content || ''}`.startsWith(SITE_DETAILS_MESSAGE_START)
+  );
+  if (!wasInstant || alreadySent) {
+    return Promise.resolve();
+  }
+  const listingId = transaction?.relationships?.listing?.data?.id;
+  return sendUnlockedSiteDetails(sdk, txId, listingId).then(() =>
+    dispatch(fetchMessagesThunk({ txId, page: 1, config }))
+  );
+};
+
 ////////////////////
 // makeTransition //
 ////////////////////
@@ -1298,5 +1323,10 @@ export const loadData = (params, search, config) => (dispatch, getState) => {
     dispatch(fetchTransactionThunk({ id: txId, txRole, config })),
     dispatch(fetchMessagesThunk({ txId, page: 1, config })),
     dispatch(fetchTransitionsThunk({ id: txId })),
-  ]);
+  ]).then(result => {
+    if (txRole === 'provider') {
+      dispatch(sendInstantBookingSiteDetailsMaybe(txId, config));
+    }
+    return result;
+  });
 };

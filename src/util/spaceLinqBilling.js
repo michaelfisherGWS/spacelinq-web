@@ -89,3 +89,13 @@ export const ongoingAgreement = (start, timeZone = 'Etc/UTC') => {
       .toDate(),
   };
 };
+
+// Notice periods a provider can choose for a listing, in days. Anything else means one month.
+export const NOTICE_DAY_OPTIONS = [7, 14];
+
+/**
+ * @param {number} [noticeDays] the listing's notice period in days
+ * @returns {string} translation key suffix: '7', '14' or 'month'
+ */
+export const noticeKey = noticeDays =>
+  NOTICE_DAY_OPTIONS.includes(Number(noticeDays)) ? `${Number(noticeDays)}` : 'month';

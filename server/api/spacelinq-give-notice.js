@@ -8,7 +8,9 @@ const { createCookieTokenStore, getSdk, getTrustedSdk, handleError } = require('
  * Months that start inside the notice period stay and are charged as normal.
  */
 const MONTHLY_PROCESS_NAME = 'spacelinq-monthly';
-const NOTICE_MONTHS = 1;
+const { UUID } = require('sharetribe-flex-sdk').types;
+// Listings choose a notice period in days; without one it is one month.
+const ALLOWED_NOTICE_DAYS = [7, 14];
 const CUSTOMER_CANCEL = 'transition/customer-cancel';
 // Last transitions of a month that is accepted but not yet due for payment
 const SCHEDULED_TRANSITIONS = [
@@ -25,12 +27,17 @@ const SCHEDULED_TRANSITIONS = [
  * @param {Array} included API included resources (bookings)
  * @param {string} agreementId uuid string of the first-month transaction
  * @param {Date} now
+ * @param {number} [noticeDays] the listing's notice period in days (7 or 14); one month if not set
  * @returns {Array<{id: Object, start: Date}>} instalments to cancel, earliest first
  */
-const pickCancellable = (transactions, included, agreementId, now) => {
-  const noticeEnds = moment(now)
-    .add(NOTICE_MONTHS, 'months')
-    .toDate();
+const pickCancellable = (transactions, included, agreementId, now, noticeDays) => {
+  const noticeEnds = ALLOWED_NOTICE_DAYS.includes(noticeDays)
+    ? moment(now)
+        .add(noticeDays, 'days')
+        .toDate()
+    : moment(now)
+        .add(1, 'months')
+        .toDate();
   const bookingStart = tx => {
     const bookingId = tx.relationships?.booking?.data?.id?.uuid;
     const booking = (included || []).find(i => i.type === 'booking' && i.id.uuid === bookingId);
@@ -54,19 +61,23 @@ const giveNotice = (req, res) => {
   const sdk = getSdk(req, res, tokenStore);
   let cancellable = [];
 
-  sdk.transactions
-    .query({
+  Promise.all([
+    sdk.transactions.query({
       only: 'order',
       processNames: [MONTHLY_PROCESS_NAME],
       include: ['booking'],
       perPage: 100,
-    })
-    .then(response => {
+    }),
+    sdk.transactions.show({ id: new UUID(agreementId), include: ['listing'] }),
+  ])
+    .then(([response, agreementResponse]) => {
+      const listing = (agreementResponse.data.included || []).find(i => i.type === 'listing');
       cancellable = pickCancellable(
         response.data.data,
         response.data.included,
         agreementId,
-        new Date()
+        new Date(),
+        listing?.attributes?.publicData?.pricing?.noticeDays
       );
       return cancellable.length > 0 ? getTrustedSdk(req, res, tokenStore) : null;
     })

@@ -363,10 +363,15 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
     // Remember the created PaymentIntent for step 5
     createdPaymentIntent = fnParams.paymentIntent;
     const transactionId = fnParams.transactionId;
-    const isTransitionedAlready = storedTx?.attributes?.lastTransition === confirmPaymentTransition;
+    // SpaceLinq: listings with instant booking are accepted as soon as the payment is confirmed
+    const isInstantBooking =
+      pageData?.listing?.attributes?.publicData?.pricing?.instantBooking === true;
+    const isTransitionedAlready =
+      storedTx?.attributes?.lastTransition === confirmPaymentTransition ||
+      storedTx?.attributes?.lastTransition === process.transitions.CONFIRM_PAYMENT_INSTANT;
     const orderPromise = isTransitionedAlready
       ? Promise.resolve(storedTx)
-      : onConfirmPayment(transactionId, confirmPaymentTransition, {});
+      : onConfirmPayment(transactionId, confirmPaymentTransition, {}, isInstantBooking);
 
     return orderPromise.then(order => {
       // Store the returned transaction (order)

@@ -21,7 +21,7 @@ import { LINE_ITEM_DAY, propTypes } from '../../../util/types';
 import { formatMoney } from '../../../util/currency';
 import { types as sdkTypes } from '../../../util/sdkLoader';
 import { addOns as spaceLinqAddOnConfig } from '../../../config/configSpaceLinq';
-import { ongoingAgreement } from '../../../util/spaceLinqBilling';
+import { ongoingAgreement, noticeKey } from '../../../util/spaceLinqBilling';
 import {
   hasInsuranceOffer,
   insuranceFromFormValues,
@@ -588,6 +588,8 @@ export const BookingDatesForm = props => {
     addOnOptions = [],
     ongoingEnabled = false,
     insuranceOffer = null,
+    noticeDays,
+    instantBooking = false,
     quantityLabel,
     minTermMonths,
     ...rest
@@ -1168,12 +1170,16 @@ export const BookingDatesForm = props => {
                         }}
                       />
                       <span>
-                        <FormattedMessage id="BookingDatesForm.spaceLinqOngoingLabel" />
+                        <FormattedMessage
+                          id={`BookingDatesForm.spaceLinqOngoingLabel.${noticeKey(noticeDays)}`}
+                        />
                       </span>
                     </label>
                     {input.checked ? (
                       <p className={css.ongoingHelp}>
-                        <FormattedMessage id="BookingDatesForm.spaceLinqOngoingHelp" />
+                        <FormattedMessage
+                          id={`BookingDatesForm.spaceLinqOngoingHelp.${noticeKey(noticeDays)}`}
+                        />
                       </p>
                     ) : null}
                   </div>
@@ -1211,7 +1217,13 @@ export const BookingDatesForm = props => {
                 inProgress={fetchLineItemsInProgress}
                 disabled={submitDisabled}
               >
-                <FormattedMessage id="BookingDatesForm.requestToBook" />
+                <FormattedMessage
+                  id={
+                    instantBooking
+                      ? 'BookingDatesForm.spaceLinqBookNow'
+                      : 'BookingDatesForm.requestToBook'
+                  }
+                />
               </PrimaryButton>
             </div>
             <FinePrint payoutDetailsWarning={payoutDetailsWarning} isOwnListing={isOwnListing} />

@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 import { pick } from '../../util/common';
-import { initiatePrivileged, transitionPrivileged } from '../../util/api';
+import { initiatePrivileged, transitionPrivileged, spaceLinqConfirmInstant } from '../../util/api';
 import { denormalisedResponseEntities } from '../../util/data';
 import { storableError } from '../../util/errors';
 import * as log from '../../util/log';
@@ -141,7 +141,7 @@ export const initiateOrder = (
 // Confirm Payment //
 /////////////////////
 const confirmPaymentPayloadCreator = (
-  { transactionId, transitionName, transitionParams = {} },
+  { transactionId, transitionName, transitionParams = {}, isInstantBooking = false },
   { extra: sdk, rejectWithValue }
 ) => {
   const bodyParams = {
@@ -154,8 +154,12 @@ const confirmPaymentPayloadCreator = (
     expand: true,
   };
 
-  return sdk.transactions
-    .transition(bodyParams, queryParams)
+  // SpaceLinq instant booking: the server confirms, accepts and takes the payment in one step.
+  const confirmCall = isInstantBooking
+    ? spaceLinqConfirmInstant({ transactionId, queryParams })
+    : sdk.transactions.transition(bodyParams, queryParams);
+
+  return confirmCall
     .then(response => {
       const order = response.data.data;
       return order;
@@ -177,13 +181,15 @@ export const confirmPaymentThunk = createAsyncThunk(
 export const confirmPayment = (
   transactionId,
   transitionName,
-  transitionParams = {}
+  transitionParams = {},
+  isInstantBooking = false
 ) => dispatch => {
   return dispatch(
     confirmPaymentThunk({
       transactionId,
       transitionName,
       transitionParams,
+      isInstantBooking,
     })
   ).unwrap();
 };

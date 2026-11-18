@@ -7,6 +7,7 @@ import { formatMoney } from '../../../util/currency';
 import { types as sdkTypes } from '../../../util/sdkLoader';
 import { spaceLinqGiveNotice, spaceLinqExtend } from '../../../util/api';
 import { serviceRates } from '../../../config/configSpaceLinq';
+import { noticeKey } from '../../../util/spaceLinqBilling';
 import {
   fetchInstalments,
   instalmentStatus,
@@ -73,6 +74,7 @@ const SpaceLinqPaymentSchedule = props => {
 
   const timeZone = listing?.attributes?.availabilityPlan?.timezone;
   const pricing = listing?.attributes?.publicData?.pricing;
+  const notice = noticeKey(pricing?.noticeDays);
   const rateCurrency = pricing?.currency || listing?.attributes?.price?.currency;
   const rateCard = (pricing?.rateCard || [])
     .map(r => ({ ...serviceRates.find(s => s.key === r.key), price: r.price }))
@@ -276,7 +278,7 @@ const SpaceLinqPaymentSchedule = props => {
         <FormattedMessage
           id={
             isCustomer
-              ? 'SpaceLinqPaymentSchedule.introCustomer'
+              ? `SpaceLinqPaymentSchedule.introCustomer.${notice}`
               : 'SpaceLinqPaymentSchedule.introProvider'
           }
           values={{ days: CHARGE_DAYS_BEFORE }}
@@ -404,7 +406,7 @@ const SpaceLinqPaymentSchedule = props => {
       {isCustomer && confirmingNotice ? (
         <div className={css.confirm}>
           <p className={css.intro}>
-            <FormattedMessage id="SpaceLinqPaymentSchedule.confirmNoticeText" />
+            <FormattedMessage id={`SpaceLinqPaymentSchedule.confirmNoticeText.${notice}`} />
           </p>
           <PrimaryButton
             className={css.confirmButton}
@@ -412,7 +414,7 @@ const SpaceLinqPaymentSchedule = props => {
             inProgress={noticeInProgress}
             onClick={onGiveNotice}
           >
-            <FormattedMessage id="SpaceLinqPaymentSchedule.confirmNotice" />
+            <FormattedMessage id={`SpaceLinqPaymentSchedule.confirmNotice.${notice}`} />
           </PrimaryButton>
           <InlineTextButton className={css.noticeLink} onClick={() => setConfirmingNotice(false)}>
             <FormattedMessage id="SpaceLinqPaymentSchedule.keepBooking" />

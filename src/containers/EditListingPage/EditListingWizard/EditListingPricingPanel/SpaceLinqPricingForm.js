@@ -22,6 +22,7 @@ import {
   FieldCurrencyInput,
   FieldTextInput,
   FieldCheckbox,
+  FieldSelect,
 } from '../../../../components';
 
 import css from './SpaceLinqPricingForm.module.css';
@@ -46,6 +47,8 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
   const rateCard = pricing.rateCard || [];
   const insurance = pricing.insurance || null;
   return {
+    instantBooking: pricing.instantBooking === true ? ['yes'] : [],
+    noticeDays: pricing.noticeDays ? `${pricing.noticeDays}` : 'month',
     insuranceOffered: insurance ? ['yes'] : [],
     insuranceRate: minorToMoney(insurance?.rate, currency),
     insuranceDgRate: minorToMoney(insurance?.dgRate, currency),
@@ -114,6 +117,8 @@ export const spaceLinqPricingToUpdateValues = (values, currency) => {
     addOns,
     rateCard,
     insurance,
+    instantBooking: (values.instantBooking || []).includes('yes'),
+    noticeDays: ['7', '14'].includes(values.noticeDays) ? Number(values.noticeDays) : null,
   };
 
   // Quotes show an indicative monthly "from" price; bookable models use the daily rate.
@@ -255,6 +260,41 @@ const SpaceLinqPricingForm = props => {
                     label={intl.formatMessage({ id: 'SpaceLinqPricingForm.minMonthlySpend' })}
                     currencyConfig={currencyConfig}
                   />
+                </div>
+              </>
+            )}
+
+            {isQuote ? null : (
+              <>
+                <h3 className={css.sectionHeading}>
+                  <FormattedMessage id="SpaceLinqPricingForm.bookingRulesHeading" />
+                </h3>
+                <div className={css.insurance}>
+                  <FieldCheckbox
+                    id={`${formId}.instantBooking`}
+                    name="instantBooking"
+                    value="yes"
+                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.instantBooking' })}
+                  />
+                  <p className={css.hint}>
+                    <FormattedMessage id="SpaceLinqPricingForm.instantBookingHelp" />
+                  </p>
+                  <FieldSelect
+                    id={`${formId}.noticeDays`}
+                    name="noticeDays"
+                    className={css.field}
+                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.noticeDays' })}
+                  >
+                    <option value="month">
+                      {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.month' })}
+                    </option>
+                    <option value="14">
+                      {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.14' })}
+                    </option>
+                    <option value="7">
+                      {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.7' })}
+                    </option>
+                  </FieldSelect>
                 </div>
               </>
             )}

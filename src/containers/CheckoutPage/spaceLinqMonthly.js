@@ -33,6 +33,12 @@ export const scheduleMonthlyInstalments = ({ orderId, pageData }) => {
   const insuranceMaybe = insurance ? { insurance } : {};
   const seatsMaybe = seats ? { seats } : {};
 
+  // With instant booking the later months are accepted straight away, like the first one.
+  const isInstantBooking = listing.attributes?.publicData?.pricing?.instantBooking === true;
+  const scheduleTransition = isInstantBooking
+    ? instalmentTransitions.SCHEDULE_EXTENSION
+    : instalmentTransitions.SCHEDULE;
+
   const scheduleOne = (period, index) =>
     initiatePrivileged({
       isSpeculative: false,
@@ -43,7 +49,7 @@ export const scheduleMonthlyInstalments = ({ orderId, pageData }) => {
       },
       bodyParams: {
         processAlias: MONTHLY_PROCESS_ALIAS,
-        transition: instalmentTransitions.SCHEDULE,
+        transition: scheduleTransition,
         params: {
           listingId: listing.id,
           bookingStart: period.start,

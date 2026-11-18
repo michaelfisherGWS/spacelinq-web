@@ -148,6 +148,14 @@ export const spaceLinqExtend = body => {
   return post('/api/spacelinq/extend', body);
 };
 
+// SpaceLinq: confirm the payment of an instant booking.
+// The server checks the listing offers instant booking, then accepts the booking.
+//
+// See `server/api/spacelinq-confirm-instant.js`.
+export const spaceLinqConfirmInstant = body => {
+  return post('/api/spacelinq/confirm-instant', body);
+};
+
 // Create user with identity provider (e.g. Facebook or Google)
 //
 // If loginWithIdp api call fails and user can't authenticate to Marketplace API with idp

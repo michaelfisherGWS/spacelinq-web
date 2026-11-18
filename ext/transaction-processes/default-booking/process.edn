@@ -41,6 +41,18 @@
    :actions [{:name :action/stripe-confirm-payment-intent}],
    :from :state/pending-payment,
    :to :state/preauthorized}
+  ;; SpaceLinq instant booking: on listings where the provider has turned it on,
+  ;; confirming the payment also accepts the booking and takes the payment.
+  ;; Privileged, so the server checks the listing first.
+  {:name :transition/confirm-payment-instant,
+   :actor :actor.role/customer,
+   :privileged? true,
+   :actions
+   [{:name :action/accept-booking}
+    {:name :action/stripe-confirm-payment-intent}
+    {:name :action/stripe-capture-payment-intent}],
+   :from :state/pending-payment,
+   :to :state/accepted}
   {:name :transition/accept,
    :actor :actor.role/provider,
    :actions
@@ -164,6 +176,14 @@
    :on :transition/confirm-payment,
    :to :actor.role/provider,
    :template :booking-new-request}
+  {:name :notification/booking-instant-confirmed-customer,
+   :on :transition/confirm-payment-instant,
+   :to :actor.role/customer,
+   :template :booking-accepted-request}
+  {:name :notification/booking-instant-confirmed-provider,
+   :on :transition/confirm-payment-instant,
+   :to :actor.role/provider,
+   :template :booking-instant-confirmed}
   {:name :notification/booking-accepted-request,
    :on :transition/accept,
    :to :actor.role/customer,

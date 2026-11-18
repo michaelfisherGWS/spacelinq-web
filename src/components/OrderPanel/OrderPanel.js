@@ -555,6 +555,8 @@ const OrderPanel = props => {
             minTermMonths={publicData?.pricing?.minTermMonths}
             ongoingEnabled={isSpaceLinqListingType(publicData?.listingType)}
             insuranceOffer={publicData?.pricing?.insurance}
+            noticeDays={publicData?.pricing?.noticeDays}
+            instantBooking={publicData?.pricing?.instantBooking === true}
             quantityLabel={spaceLinqPricingModels[(publicData?.pricing?.model)]?.quantityLabel}
             {...priceVariantsMaybe}
             {...sharedProps}

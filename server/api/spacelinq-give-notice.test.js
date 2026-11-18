@@ -43,3 +43,34 @@ describe('SpaceLinq give notice', () => {
     );
   });
 });
+
+describe('SpaceLinq give notice with a shorter notice period', () => {
+  const tx = (id, lastTransition) => ({
+    id: { uuid: id },
+    attributes: { lastTransition, protectedData: { agreementId: 'A' } },
+    relationships: { booking: { data: { id: { uuid: `b-${id}` } } } },
+  });
+  const booking = (id, start) => ({
+    type: 'booking',
+    id: { uuid: `b-${id}` },
+    attributes: { start },
+  });
+  const now = new Date(Date.UTC(2027, 0, 20));
+  const transactions = [tx('m2', 'transition/accept'), tx('m3', 'transition/schedule-extension')];
+  const included = [
+    booking('m2', new Date(Date.UTC(2027, 1, 1))),
+    booking('m3', new Date(Date.UTC(2027, 2, 1))),
+  ];
+
+  it('cancels a month that starts after 7 days of notice', () => {
+    // 1 Feb is 12 days after 20 Jan: inside one month, outside 7 days
+    expect(pickCancellable(transactions, included, 'A', now).map(i => i.id.uuid)).toEqual(['m3']);
+    expect(pickCancellable(transactions, included, 'A', now, 7).map(i => i.id.uuid)).toEqual([
+      'm2',
+      'm3',
+    ]);
+    expect(pickCancellable(transactions, included, 'A', now, 14).map(i => i.id.uuid)).toEqual([
+      'm3',
+    ]);
+  });
+});

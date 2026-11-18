@@ -72,6 +72,19 @@ module.exports = (req, res) => {
       const listing = showListingResponse.data.data;
       const commissionAsset = fetchAssetsResponse.data.data[0];
 
+      // SpaceLinq: months that are accepted straight away may only be scheduled
+      // on listings with instant booking.
+      const isInstantSchedule =
+        `${bodyParams?.processAlias || ''}`.startsWith('spacelinq-monthly/') &&
+        transitionName === 'transition/schedule-extension';
+      if (isInstantSchedule && listing.attributes.publicData?.pricing?.instantBooking !== true) {
+        const error = new Error('Error: this listing does not offer instant booking.');
+        error.status = 403;
+        error.statusText = error.message;
+        error.data = {};
+        throw error;
+      }
+
       const currency = listing.attributes.price?.currency || orderData.currency;
       const { providerCommission, customerCommission } =
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};

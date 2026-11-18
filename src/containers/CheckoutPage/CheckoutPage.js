@@ -226,8 +226,8 @@ const CheckoutPage = props => {
   ]);
 
   const onConfirmPayment = useCallback(
-    (transactionId, transitionName, transitionParams) =>
-      dispatch(confirmPayment(transactionId, transitionName, transitionParams)),
+    (transactionId, transitionName, transitionParams, isInstantBooking) =>
+      dispatch(confirmPayment(transactionId, transitionName, transitionParams, isInstantBooking)),
     [dispatch]
   );
   const onFetchTransaction = useCallback(id => dispatch(fetchTransaction(id)), [dispatch]);
