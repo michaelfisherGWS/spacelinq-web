@@ -18,7 +18,11 @@ import SpaceLinqPricingForm, {
   getSpaceLinqPricingInitialValues,
   spaceLinqPricingToUpdateValues,
 } from './SpaceLinqPricingForm';
-import { getSpaceCategory, isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
+import {
+  HOURLY_LISTING_TYPE,
+  getSpaceCategory,
+  isSpaceLinqListingType,
+} from '../../../../config/configSpaceLinq';
 import {
   getInitialValuesForPriceVariants,
   handleSubmitValuesForPriceVariants,
@@ -172,11 +176,13 @@ const EditListingPricingPanel = props => {
               spaceLinqPricingToUpdateValues(
                 values,
                 marketplaceCurrency,
-                getSpaceCategory(publicData)
+                getSpaceCategory(publicData),
+                publicData?.listingType === HOURLY_LISTING_TYPE
               )
             )
           }
           spaceCategory={getSpaceCategory(publicData)}
+          isHourly={publicData?.listingType === HOURLY_LISTING_TYPE}
           marketplaceCurrency={marketplaceCurrency}
           saveActionMsg={submitButtonText}
           disabled={disabled}

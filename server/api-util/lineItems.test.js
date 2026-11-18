@@ -1141,6 +1141,6 @@ describe('SpaceLinq short-stay daily rate', () => {
         null,
         null
       )
-    ).toThrow('booked by the day');
+    ).toThrow('booked by the day or hour');
   });
 });

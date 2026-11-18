@@ -475,8 +475,8 @@ exports.transactionLineItems = (
       ? getSpaceLinqShortStayPrice(listing, orderData, currency)
       : null;
   // SpaceLinq: a listing offered by the day only cannot be booked as an ongoing agreement
-  if (publicData?.pricing?.cycle === 'day' && orderData?.agreement) {
-    const message = 'Error: this listing is booked by the day and has no ongoing option.';
+  if (['day', 'hour'].includes(publicData?.pricing?.cycle) && orderData?.agreement) {
+    const message = 'Error: this listing is booked by the day or hour and has no ongoing option.';
     const error = new Error(message);
     error.status = 400;
     error.statusText = message;

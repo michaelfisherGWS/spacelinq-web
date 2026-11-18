@@ -11,7 +11,7 @@
 import { DAYS_PER_MONTH, DAYS_PER_WEEK } from '../config/configSpaceLinq';
 
 export const daysInCycle = cycle =>
-  cycle === 'day' ? 1 : cycle === 'week' ? DAYS_PER_WEEK : DAYS_PER_MONTH;
+  ['day', 'hour'].includes(cycle) ? 1 : cycle === 'week' ? DAYS_PER_WEEK : DAYS_PER_MONTH;
 
 /**
  * Convert a per-cycle rate to a daily rate.
@@ -84,7 +84,7 @@ export const getSpaceLinqDisplayPrice = publicData => {
   if (!pricing || !Number.isInteger(pricing.rate) || pricing.rate <= 0) {
     return null;
   }
-  const cycle = ['day', 'week'].includes(pricing.cycle) ? pricing.cycle : 'month';
+  const cycle = ['hour', 'day', 'week'].includes(pricing.cycle) ? pricing.cycle : 'month';
   const perUnit =
     pricing.model === 'per-pallet'
       ? `per pallet / ${cycle}`
@@ -95,7 +95,7 @@ export const getSpaceLinqDisplayPrice = publicData => {
       : `per ${cycle}`;
   // A separate price for stays under a month, when the provider has set one
   const hasDailyRate =
-    cycle !== 'day' &&
+    ['week', 'month'].includes(cycle) &&
     pricing.model !== 'quote' &&
     Number.isInteger(pricing.dailyRate) &&
     pricing.dailyRate > 0;

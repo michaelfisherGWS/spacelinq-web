@@ -10,12 +10,17 @@
  * Dimensions are in millimetres, weights in kilograms.
  */
 
-export const SPACELINQ_LISTING_TYPES = [
+// Listing type for space booked by the hour. Defined in code, see applySpaceLinqListingTypes.
+export const HOURLY_LISTING_TYPE = 'hourly-space';
+
+const WAREHOUSING_LISTING_TYPES = [
   'pallet-storage',
   'floor-space',
   'dedicated-space',
   'quote-on-request',
 ];
+
+export const SPACELINQ_LISTING_TYPES = [...WAREHOUSING_LISTING_TYPES, HOURLY_LISTING_TYPE];
 
 export const isSpaceLinqListingType = listingType => SPACELINQ_LISTING_TYPES.includes(listingType);
 
@@ -36,7 +41,7 @@ export const spaceCategories = [
     key: 'warehousing',
     label: 'Warehousing and 3PL',
     description: 'Pallet spaces, floor area, bays and 3PL services for business stock.',
-    listingTypes: SPACELINQ_LISTING_TYPES,
+    listingTypes: WAREHOUSING_LISTING_TYPES,
     pricingModel: null,
     dailyOnly: false,
     services: true,
@@ -56,7 +61,7 @@ export const spaceCategories = [
     key: 'parking',
     label: 'Parking and vehicle storage',
     description: 'Car parks, garages and yard space for cars, caravans, boats and trailers.',
-    listingTypes: ['dedicated-space'],
+    listingTypes: ['dedicated-space', HOURLY_LISTING_TYPE],
     pricingModel: 'per-space',
     dailyOnly: true,
     services: false,
@@ -66,7 +71,7 @@ export const spaceCategories = [
     key: 'event-space',
     label: 'Event and short-stay space',
     description: 'Parking near a venue, stall or pop-up space, booked by the day.',
-    listingTypes: ['dedicated-space'],
+    listingTypes: ['dedicated-space', HOURLY_LISTING_TYPE],
     pricingModel: 'per-space',
     dailyOnly: true,
     services: false,
@@ -76,13 +81,48 @@ export const spaceCategories = [
     key: 'other',
     label: 'Other space',
     description: 'Any other space you can rent out. Name it yourself and set your own rate.',
-    listingTypes: ['dedicated-space'],
+    listingTypes: ['dedicated-space', HOURLY_LISTING_TYPE],
     pricingModel: 'per-space',
     dailyOnly: true,
     services: false,
     goodsInsurance: false,
   },
 ];
+
+/**
+ * How a non-warehousing provider is asked to choose between the listing types
+ * of their category: by how the space is booked, not by a warehouse term.
+ */
+export const bookingStyleLabels = {
+  'dedicated-space': 'By the day or month',
+  [HOURLY_LISTING_TYPE]: 'By the hour',
+};
+
+/**
+ * Add SpaceLinq's code-defined listing types to the ones managed in Console.
+ * Space booked by the hour is the dedicated-space listing type with the hour
+ * unit and several bookable units, so it follows that type's Console settings.
+ *
+ * @param {Array<Object>} listingTypes - listing types from hosted configuration
+ * @returns {Array<Object>}
+ */
+export const applySpaceLinqListingTypes = listingTypes => {
+  const types = listingTypes || [];
+  const base = types.find(lt => lt.listingType === 'dedicated-space');
+  if (!base || types.some(lt => lt.listingType === HOURLY_LISTING_TYPE)) {
+    return types;
+  }
+  return [
+    ...types,
+    {
+      ...base,
+      listingType: HOURLY_LISTING_TYPE,
+      label: 'Space by the hour',
+      transactionType: { ...base.transactionType, unitType: 'hour' },
+      availabilityType: 'multipleSeats',
+    },
+  ];
+};
 
 export const getSpaceCategoryConfig = key => spaceCategories.find(c => c.key === key) || null;
 
@@ -219,7 +259,7 @@ export const storageUnits = [
     categories: ['self-storage', 'parking'],
     label: 'Garage',
     icon: 'garage',
-    listingTypes: ['dedicated-space', 'quote-on-request'],
+    listingTypes: ['dedicated-space', 'quote-on-request', HOURLY_LISTING_TYPE],
     dimensions: { length: 6000, width: 3000, height: 2400, maxWeight: null },
     description:
       'A lockable single garage, about 6 x 3 m, for household goods, a vehicle or trade stock.',
@@ -247,7 +287,7 @@ export const storageUnits = [
     categories: ['parking', 'event-space'],
     label: 'Parking or driveway space',
     icon: 'parking',
-    listingTypes: ['dedicated-space', 'quote-on-request'],
+    listingTypes: ['dedicated-space', 'quote-on-request', HOURLY_LISTING_TYPE],
     dimensions: { length: 5400, width: 2400, height: null, maxWeight: null },
     description: 'An off-street space for a car, boat, caravan or trailer.',
   },
@@ -256,7 +296,7 @@ export const storageUnits = [
     categories: ['parking', 'event-space'],
     label: 'Covered or basement car park',
     icon: 'garage',
-    listingTypes: ['dedicated-space', 'quote-on-request'],
+    listingTypes: ['dedicated-space', 'quote-on-request', HOURLY_LISTING_TYPE],
     dimensions: { length: 5400, width: 2400, height: 2100, maxWeight: null },
     description: 'An under-cover park in a carport, parking building or basement.',
   },
@@ -265,7 +305,7 @@ export const storageUnits = [
     categories: ['parking'],
     label: 'Caravan, boat or trailer space',
     icon: 'parking',
-    listingTypes: ['dedicated-space', 'quote-on-request'],
+    listingTypes: ['dedicated-space', 'quote-on-request', HOURLY_LISTING_TYPE],
     dimensions: { length: 8000, width: 3000, height: null, maxWeight: null },
     description: 'A longer space for a caravan, motorhome, boat on a trailer or work trailer.',
   },
@@ -283,7 +323,7 @@ export const storageUnits = [
     categories: ['event-space'],
     label: 'Stall, pop-up or event site',
     icon: 'floor',
-    listingTypes: ['dedicated-space', 'quote-on-request'],
+    listingTypes: ['dedicated-space', 'quote-on-request', HOURLY_LISTING_TYPE],
     dimensions: { length: 3000, width: 3000, height: null, maxWeight: null },
     description: 'A marked site for a market stall, food truck, pop-up shop or display.',
   },
@@ -292,7 +332,7 @@ export const storageUnits = [
     categories: ['other'],
     label: 'Other space',
     icon: 'floor',
-    listingTypes: ['dedicated-space', 'quote-on-request'],
+    listingTypes: ['dedicated-space', 'quote-on-request', HOURLY_LISTING_TYPE],
     dimensions: null,
     custom: true,
     description: 'A space that does not fit the other options. Tell us what it is below.',
@@ -350,7 +390,7 @@ export const pricingModels = {
     unitLabel: 'space',
     capacityLabel: 'Spaces available',
     quantityLabel: 'Number of spaces',
-    cycles: ['month', 'day'],
+    cycles: ['month', 'day', 'hour'],
   },
   quote: {
     label: 'Quote on request',
@@ -362,6 +402,7 @@ export const pricingModels = {
 };
 
 export const defaultPricingModelForListingType = {
+  [HOURLY_LISTING_TYPE]: 'per-space',
   'pallet-storage': 'per-pallet',
   'floor-space': 'per-m2',
   'dedicated-space': 'fixed-monthly',

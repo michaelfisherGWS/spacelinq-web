@@ -15,7 +15,9 @@ import {
 } from '../../../../util/fieldHelpers';
 import { maxLength, required, composeValidators } from '../../../../util/validators';
 import {
+  DEFAULT_SPACE_CATEGORY,
   SPACE_CATEGORY_FIELD_KEY,
+  bookingStyleLabels,
   getSpaceCategoryConfig,
   isFieldForSpaceListing,
   isSpaceLinqListingType,
@@ -78,6 +80,7 @@ const FieldSelectListingType = props => {
     formApi,
     formId,
     intl,
+    label,
   } = props;
   const hasMultipleListingTypes = listingTypes?.length > 1;
 
@@ -101,7 +104,7 @@ const FieldSelectListingType = props => {
         id={formId ? `${formId}.${name}` : name}
         name={name}
         className={css.listingTypeSelect}
-        label={intl.formatMessage({ id: 'EditListingDetailsForm.listingTypeLabel' })}
+        label={label || intl.formatMessage({ id: 'EditListingDetailsForm.listingTypeLabel' })}
         validate={required(
           intl.formatMessage({ id: 'EditListingDetailsForm.listingTypeRequired' })
         )}
@@ -146,12 +149,20 @@ const SPACE_CATEGORY_FIELD = `pub_${SPACE_CATEGORY_FIELD_KEY}`;
 // Listing types a provider can pick once a SpaceLinq category is chosen.
 const listingTypesForSpaceCategory = (listingTypes, categoryKey) => {
   const category = getSpaceCategoryConfig(categoryKey);
-  return category
-    ? listingTypes.filter(
-        lt =>
-          !isSpaceLinqListingType(lt.listingType) || category.listingTypes.includes(lt.listingType)
-      )
-    : listingTypes;
+  if (!category) {
+    return listingTypes;
+  }
+  // Outside warehousing the choice is how the space is booked, so it is worded that way
+  const relabel = lt =>
+    categoryKey !== DEFAULT_SPACE_CATEGORY && bookingStyleLabels[lt.listingType]
+      ? { ...lt, label: bookingStyleLabels[lt.listingType] }
+      : lt;
+  return listingTypes
+    .filter(
+      lt =>
+        !isSpaceLinqListingType(lt.listingType) || category.listingTypes.includes(lt.listingType)
+    )
+    .map(relabel);
 };
 
 /**
@@ -532,6 +543,11 @@ const EditListingDetailsForm = props => (
             <FieldSelectListingType
               name="listingType"
               listingTypes={listingTypeOptions}
+              label={
+                useSpaceCategories && spaceCategory !== DEFAULT_SPACE_CATEGORY
+                  ? intl.formatMessage({ id: 'EditListingDetailsForm.bookingStyleLabel' })
+                  : null
+              }
               hasPredefinedListingType={hasPredefinedListingType}
               onListingTypeChange={onListingTypeChange}
               formApi={formApi}

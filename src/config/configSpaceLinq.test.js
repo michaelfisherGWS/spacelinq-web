@@ -102,3 +102,60 @@ describe('listing fields by category', () => {
     );
   });
 });
+
+describe('space booked by the hour', () => {
+  const {
+    HOURLY_LISTING_TYPE,
+    applySpaceLinqListingTypes,
+    isSpaceLinqListingType,
+  } = require('./configSpaceLinq');
+  const hosted = [
+    {
+      listingType: 'dedicated-space',
+      label: 'Dedicated space',
+      transactionType: {
+        process: 'default-booking',
+        alias: 'default-booking/release-1',
+        unitType: 'day',
+      },
+      availabilityType: 'oneSeat',
+      defaultListingFields: { images: false },
+    },
+  ];
+
+  it('adds an hourly listing type based on dedicated space', () => {
+    const types = applySpaceLinqListingTypes(hosted);
+    expect(types).toHaveLength(2);
+    expect(types[1]).toEqual({
+      listingType: HOURLY_LISTING_TYPE,
+      label: 'Space by the hour',
+      transactionType: {
+        process: 'default-booking',
+        alias: 'default-booking/release-1',
+        unitType: 'hour',
+      },
+      availabilityType: 'multipleSeats',
+      defaultListingFields: { images: false },
+    });
+    // The Console listing type is left as it was
+    expect(types[0]).toBe(hosted[0]);
+  });
+
+  it('does nothing when Console already has it, or has no dedicated space', () => {
+    const withHourly = applySpaceLinqListingTypes(hosted);
+    expect(applySpaceLinqListingTypes(withHourly)).toBe(withHourly);
+    expect(applySpaceLinqListingTypes([])).toEqual([]);
+    expect(applySpaceLinqListingTypes(undefined)).toEqual([]);
+  });
+
+  it('is offered for parking, event and other space, not warehousing or self-storage', () => {
+    const offers = key => spaceCategories.find(c => c.key === key).listingTypes;
+    expect(offers('parking')).toContain(HOURLY_LISTING_TYPE);
+    expect(offers('event-space')).toContain(HOURLY_LISTING_TYPE);
+    expect(offers('other')).toContain(HOURLY_LISTING_TYPE);
+    expect(offers('warehousing')).not.toContain(HOURLY_LISTING_TYPE);
+    expect(offers('self-storage')).not.toContain(HOURLY_LISTING_TYPE);
+    expect(isSpaceLinqListingType(HOURLY_LISTING_TYPE)).toBe(true);
+    expect(pricingModelFor(HOURLY_LISTING_TYPE, 'parking')).toBe('per-space');
+  });
+});

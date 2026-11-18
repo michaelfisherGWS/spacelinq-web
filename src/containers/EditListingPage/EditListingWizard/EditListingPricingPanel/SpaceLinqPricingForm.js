@@ -84,21 +84,28 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
  * @param {Object} values - form values
  * @param {string} currency
  * @param {string} [spaceCategory] - space category key; limits what the listing can offer
+ * @param {boolean} [isHourly] - the listing is booked by the hour: the rate is per hour
  * @returns {Object} { price, publicData }
  */
-export const spaceLinqPricingToUpdateValues = (values, currency, spaceCategory) => {
+export const spaceLinqPricingToUpdateValues = (values, currency, spaceCategory, isHourly) => {
   const { model, cycle: rawCycle, minTermMonths, addOnKeys = [], rateKeys = [] } = values;
   const category = getSpaceCategoryConfig(spaceCategory);
   // Short stays only: the rate is per day and there is no monthly price
   const isDailyOnly =
-    model !== 'quote' && category?.dailyOnly === true && values.stayType === 'daily';
+    isHourly || (model !== 'quote' && category?.dailyOnly === true && values.stayType === 'daily');
   const rateCard =
     category && !category.services
       ? []
       : rateKeys
           .map(key => ({ key, price: moneyToMinor(values[`ratePrice_${key}`]) }))
           .filter(r => Number.isInteger(r.price) && r.price > 0);
-  const cycle = isDailyOnly ? 'day' : model === 'per-pallet' ? rawCycle || 'week' : 'month';
+  const cycle = isHourly
+    ? 'hour'
+    : isDailyOnly
+    ? 'day'
+    : model === 'per-pallet'
+    ? rawCycle || 'week'
+    : 'month';
   const rate = moneyToMinor(values.rate);
   const offeredAddOnKeys = addOnsForSpaceCategory(spaceCategory).map(a => a.key);
   // Optional services are monthly prices, so a daily-only listing has none
@@ -167,7 +174,7 @@ const required = message => value =>
  */
 const SpaceLinqPricingForm = props => {
   const intl = useIntl();
-  const { marketplaceCurrency, spaceCategory } = props;
+  const { marketplaceCurrency, spaceCategory, isHourly } = props;
   const category = getSpaceCategoryConfig(spaceCategory);
   const addOnOptions = addOnsForSpaceCategory(spaceCategory);
   const showRateCard = !category || category.services;
@@ -195,9 +202,16 @@ const SpaceLinqPricingForm = props => {
         const modelConfig = pricingModels[values.model] || {};
         const isQuote = values.model === 'quote';
         const isPallet = values.model === 'per-pallet';
-        const canBeDailyOnly = !isQuote && category?.dailyOnly === true;
-        const isDailyOnly = canBeDailyOnly && values.stayType === 'daily';
-        const cycle = isDailyOnly ? 'day' : isPallet ? values.cycle || 'week' : 'month';
+        const canBeDailyOnly = !isHourly && !isQuote && category?.dailyOnly === true;
+        // Hourly listings share the short-stay form: one rate, no monthly options
+        const isDailyOnly = isHourly || (canBeDailyOnly && values.stayType === 'daily');
+        const cycle = isHourly
+          ? 'hour'
+          : isDailyOnly
+          ? 'day'
+          : isPallet
+          ? values.cycle || 'week'
+          : 'month';
         const rateMinor = moneyToMinor(values.rate);
         const { updateListingError, showListingsError } = fetchErrors || {};
         const submitDisabled = invalid || disabled || updateInProgress;
@@ -268,6 +282,8 @@ const SpaceLinqPricingForm = props => {
                     id={
                       isQuote
                         ? 'SpaceLinqPricingForm.perMonthFrom'
+                        : isHourly
+                        ? 'SpaceLinqPricingForm.perHour'
                         : isDailyOnly
                         ? 'SpaceLinqPricingForm.perDay'
                         : 'SpaceLinqPricingForm.perMonth'

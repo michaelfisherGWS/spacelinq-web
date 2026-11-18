@@ -121,3 +121,15 @@ describe('getDisplayedListingPrice', () => {
     expect(getDisplayedListingPrice({ publicData: {} }, Money)).toBe(null);
   });
 });
+
+describe('hourly pricing', () => {
+  const { getSpaceLinqDisplayPrice } = require('./spacelinqPricing');
+  it('keeps an hourly rate as the listing price and shows it per hour', () => {
+    expect(toDailyRate(600, 'hour')).toBe(600);
+    expect(
+      getSpaceLinqDisplayPrice({
+        pricing: { model: 'per-space', cycle: 'hour', rate: 600, dailyRate: 1500 },
+      })
+    ).toEqual({ amount: 600, perUnit: 'per space / hour', isFrom: false, shortStay: null });
+  });
+});
