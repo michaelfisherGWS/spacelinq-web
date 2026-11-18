@@ -26,3 +26,14 @@ describe('SpaceLinq scheduling of later months', () => {
     expect(laterPeriods(d('2027-01-15'), d('2027-02-15'), timeZone)).toEqual([]);
   });
 });
+
+describe('inBatches', () => {
+  const { inBatches } = require('./spacelinq-schedule');
+  it('splits eleven months into groups of four', () => {
+    const months = Array.from({ length: 11 }, (_, i) => i + 2);
+    expect(inBatches(months, 4)).toEqual([[2, 3, 4, 5], [6, 7, 8, 9], [10, 11, 12]]);
+  });
+  it('returns nothing for nothing', () => {
+    expect(inBatches([], 4)).toEqual([]);
+  });
+});

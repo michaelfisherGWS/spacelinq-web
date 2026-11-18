@@ -57,6 +57,18 @@ const laterPeriods = (agreementStart, agreementEnd, timeZone) => {
 const includedOf = (included, type, id) =>
   (included || []).find(i => i.type === type && i.id.uuid === id?.uuid);
 
+// How many months are created at the same time.
+const BATCH_SIZE = 4;
+
+const inBatches = (items, size) =>
+  items.reduce(
+    (batches, item, i) =>
+      i % size === 0
+        ? [...batches, [item]]
+        : [...batches.slice(0, -1), [...batches[batches.length - 1], item]],
+    []
+  );
+
 const schedule = (req, res) => {
   const { agreementId } = req.body || {};
   if (typeof agreementId !== 'string' || agreementId.length === 0) {
@@ -156,15 +168,23 @@ const schedule = (req, res) => {
       }
       return getTrustedSdk(req, res, tokenStore)
         .then(trustedSdk =>
-          bodies.reduce(
-            (chain, body) =>
+          // A few months at a time: one by one took about 40 seconds for a year.
+          inBatches(bodies, BATCH_SIZE).reduce(
+            (chain, batch) =>
               chain.then(result =>
                 result.failed
                   ? result
-                  : trustedSdk.transactions
-                      .initiate(body)
-                      .then(() => ({ ...result, scheduled: result.scheduled + 1 }))
-                      .catch(() => ({ ...result, failed: true }))
+                  : Promise.all(
+                      batch.map(body =>
+                        trustedSdk.transactions
+                          .initiate(body)
+                          .then(() => true)
+                          .catch(() => false)
+                      )
+                    ).then(outcomes => ({
+                      scheduled: result.scheduled + outcomes.filter(ok => ok).length,
+                      failed: outcomes.some(ok => !ok),
+                    }))
               ),
             Promise.resolve({ scheduled: 0, failed: false })
           )
@@ -180,3 +200,4 @@ const schedule = (req, res) => {
 
 module.exports = schedule;
 module.exports.laterPeriods = laterPeriods;
+module.exports.inBatches = inBatches;
