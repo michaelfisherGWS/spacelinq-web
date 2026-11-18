@@ -276,6 +276,40 @@ const getSpaceLinqFlatMonthly = (listing, orderData, currency) => {
 };
 exports.getSpaceLinqFlatMonthly = getSpaceLinqFlatMonthly;
 
+/**
+ * SpaceLinq: a separate price for short stays.
+ *
+ * A provider can set a daily rate next to the monthly (or weekly) price. A booking
+ * shorter than one calendar month is charged that daily rate per day. A month or
+ * more keeps the monthly price, so neither price is worked out from the other.
+ * Listings priced per day already have the daily rate as their listing price.
+ *
+ * @param {Object} listing listing with publicData.pricing ({ dailyRate, cycle, model })
+ * @param {Object} orderData order data (bookingStart, bookingEnd)
+ * @param {string} currency
+ * @returns {Money|null} the daily unit price, or null to use the listing price
+ */
+const getSpaceLinqShortStayPrice = (listing, orderData, currency) => {
+  const pricing = listing?.attributes?.publicData?.pricing;
+  const { bookingStart, bookingEnd } = orderData || {};
+  const hasDailyRate = Number.isInteger(pricing?.dailyRate) && pricing.dailyRate > 0;
+  if (!hasDailyRate || pricing.cycle === 'day' || pricing.model === 'quote') {
+    return null;
+  }
+  if (!bookingStart || !bookingEnd) {
+    return null;
+  }
+  const timeZone = listing.attributes.availabilityPlan?.timezone || 'Etc/UTC';
+  const start = momentTz.tz(bookingStart, timeZone);
+  const end = momentTz.tz(bookingEnd, timeZone);
+  const isUnderAMonth = start
+    .clone()
+    .add(1, 'months')
+    .isAfter(end);
+  return isUnderAMonth ? new Money(pricing.dailyRate, currency) : null;
+};
+exports.getSpaceLinqShortStayPrice = getSpaceLinqShortStayPrice;
+
 // SpaceLinq: the marketplace fee on services (optional monthly services and
 // 3PL service charges). Storage uses the commission set in Sharetribe Console.
 // Set to 7 for testing so it is easy to tell apart from the 10% storage fee.
@@ -435,11 +469,25 @@ exports.transactionLineItems = (
   const flatMonthly = ['day', 'night'].includes(unitType)
     ? getSpaceLinqFlatMonthly(listing, orderData, currency)
     : null;
+  // SpaceLinq: stays under a month use the provider's daily rate when one is set
+  const shortStayPrice =
+    !flatMonthly && ['day', 'night'].includes(unitType)
+      ? getSpaceLinqShortStayPrice(listing, orderData, currency)
+      : null;
+  // SpaceLinq: a listing offered by the day only cannot be booked as an ongoing agreement
+  if (publicData?.pricing?.cycle === 'day' && orderData?.agreement) {
+    const message = 'Error: this listing is booked by the day and has no ongoing option.';
+    const error = new Error(message);
+    error.status = 400;
+    error.statusText = message;
+    error.data = {};
+    throw error;
+  }
   const order = flatMonthly
     ? flatMonthly.lineItem
     : {
         code,
-        unitPrice,
+        unitPrice: shortStayPrice || unitPrice,
         ...quantityOrSeats,
         includeFor: ['customer', 'provider'],
       };

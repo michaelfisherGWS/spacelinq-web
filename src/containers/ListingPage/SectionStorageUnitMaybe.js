@@ -36,7 +36,7 @@ const SectionStorageUnitMaybe = props => {
       <div className={css.unit}>
         <StorageUnitIcon icon={unit.icon} className={css.icon} title={unit.label} />
         <div>
-          <p className={css.label}>{unit.label}</p>
+          <p className={css.label}>{publicData?.customSpaceType || unit.label}</p>
           <p className={css.description}>{unit.description}</p>
           {publicData?.accessHours || publicData?.pricing?.minTermMonths ? (
             <ul className={css.specs}>

@@ -1050,3 +1050,97 @@ describe('SpaceLinq flat monthly pricing', () => {
     expect(result.find(i => i.code === 'line-item/insurance').unitPrice.amount).toEqual(12000);
   });
 });
+
+describe('SpaceLinq short-stay daily rate', () => {
+  const { Money } = types;
+  const momentTz = require('moment-timezone');
+  const timezone = 'Pacific/Auckland';
+  const at = s => momentTz.tz(s, timezone).toDate();
+  const listing = (pricing, price = 592) => ({
+    attributes: {
+      price: new Money(price, 'NZD'),
+      availabilityPlan: { timezone },
+      publicData: { unitType: 'day', pricing },
+    },
+  });
+  // A car park: $180.00 a month, or $15.00 a day for short stays
+  const parking = { model: 'per-space', cycle: 'month', rate: 18000, dailyRate: 1500 };
+
+  it('charges the daily rate for a stay under a month', () => {
+    const result = transactionLineItems(
+      listing(parking),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-03-08'), seats: 2 },
+      { percentage: 10 },
+      null
+    );
+    expect([result[0].code, result[0].unitPrice.amount, result[0].units, result[0].seats]).toEqual([
+      'line-item/day',
+      1500,
+      3,
+      2,
+    ]);
+    // Commission follows the short-stay price: 3 days x 2 spaces x $15.00
+    expect(result.find(i => i.code === 'line-item/provider-commission').unitPrice.amount).toEqual(
+      9000
+    );
+  });
+
+  it('keeps the monthly price for a whole month and longer part months', () => {
+    const month = transactionLineItems(
+      listing(parking),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-04-05'), seats: 1 },
+      null,
+      null
+    );
+    expect([month[0].code, month[0].unitPrice.amount]).toEqual(['line-item/month', 18000]);
+
+    const sixWeeks = transactionLineItems(
+      listing(parking),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-04-16'), seats: 1 },
+      null,
+      null
+    );
+    expect([sixWeeks[0].code, sixWeeks[0].unitPrice.amount]).toEqual(['line-item/day', 592]);
+  });
+
+  it('uses the listing price when no daily rate is set', () => {
+    const result = transactionLineItems(
+      listing({ model: 'per-space', cycle: 'month', rate: 18000 }),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-03-08'), seats: 1 },
+      null,
+      null
+    );
+    expect(result[0].unitPrice.amount).toEqual(592);
+  });
+
+  it('charges a day-only listing its daily price, for any length of stay', () => {
+    const eventParking = { model: 'per-space', cycle: 'day', rate: 2500 };
+    const result = transactionLineItems(
+      listing(eventParking, 2500),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-04-05'), seats: 1 },
+      null,
+      null
+    );
+    expect([result[0].code, result[0].unitPrice.amount, result[0].units]).toEqual([
+      'line-item/day',
+      2500,
+      31,
+    ]);
+  });
+
+  it('refuses an ongoing agreement on a day-only listing', () => {
+    expect(() =>
+      transactionLineItems(
+        listing({ model: 'per-space', cycle: 'day', rate: 2500 }, 2500),
+        {
+          bookingStart: at('2027-03-05'),
+          bookingEnd: at('2027-04-05'),
+          seats: 1,
+          agreement: { start: at('2027-03-05'), end: at('2028-03-05') },
+        },
+        null,
+        null
+      )
+    ).toThrow('booked by the day');
+  });
+});

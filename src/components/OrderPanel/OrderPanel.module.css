@@ -279,3 +279,9 @@
     padding: 0;
   }
 }
+
+.shortStayPrice {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 4px 0 0 0;
+}

@@ -14,6 +14,13 @@ import {
   isValidCurrencyForTransactionProcess,
 } from '../../../../util/fieldHelpers';
 import { maxLength, required, composeValidators } from '../../../../util/validators';
+import {
+  SPACE_CATEGORY_FIELD_KEY,
+  getSpaceCategoryConfig,
+  isFieldForSpaceListing,
+  isSpaceLinqListingType,
+  spaceCategoriesForListingType,
+} from '../../../../config/configSpaceLinq';
 
 // Import shared components
 import {
@@ -134,6 +141,90 @@ const FieldSelectListingType = props => {
   );
 };
 
+const SPACE_CATEGORY_FIELD = `pub_${SPACE_CATEGORY_FIELD_KEY}`;
+
+// Listing types a provider can pick once a SpaceLinq category is chosen.
+const listingTypesForSpaceCategory = (listingTypes, categoryKey) => {
+  const category = getSpaceCategoryConfig(categoryKey);
+  return category
+    ? listingTypes.filter(
+        lt =>
+          !isSpaceLinqListingType(lt.listingType) || category.listingTypes.includes(lt.listingType)
+      )
+    : listingTypes;
+};
+
+/**
+ * SpaceLinq: the first question on the listing form. The category decides which
+ * listing types, storage options and fields the provider sees next.
+ */
+const FieldSelectSpaceCategory = props => {
+  const {
+    listingTypes,
+    hasPredefinedListingType,
+    onListingTypeChange,
+    formApi,
+    formId,
+    values,
+    intl,
+  } = props;
+  const options = hasPredefinedListingType
+    ? spaceCategoriesForListingType(values.listingType)
+    : spaceCategoriesForListingType();
+  const selected = getSpaceCategoryConfig(values[SPACE_CATEGORY_FIELD]);
+
+  const handleOnChange = value => {
+    if (hasPredefinedListingType) {
+      return;
+    }
+    // A category with a single listing type selects it for the provider.
+    const available = listingTypesForSpaceCategory(listingTypes, value);
+    const next = available.length === 1 ? available[0] : null;
+    const stillValid = available.some(lt => lt.listingType === values.listingType);
+    if (next) {
+      formApi.batch(() => {
+        formApi.change('listingType', next.listingType);
+        formApi.change('transactionProcessAlias', next.transactionProcessAlias);
+        formApi.change('unitType', next.unitType);
+      });
+      if (onListingTypeChange) {
+        onListingTypeChange(next);
+      }
+    } else if (!stillValid) {
+      formApi.batch(() => {
+        formApi.change('listingType', undefined);
+        formApi.change('transactionProcessAlias', undefined);
+        formApi.change('unitType', undefined);
+      });
+    }
+  };
+
+  return (
+    <>
+      <FieldSelect
+        id={`${formId}.${SPACE_CATEGORY_FIELD}`}
+        name={SPACE_CATEGORY_FIELD}
+        className={css.listingTypeSelect}
+        label={intl.formatMessage({ id: 'EditListingDetailsForm.spaceCategoryLabel' })}
+        validate={required(
+          intl.formatMessage({ id: 'EditListingDetailsForm.spaceCategoryRequired' })
+        )}
+        onChange={handleOnChange}
+      >
+        <option disabled value="">
+          {intl.formatMessage({ id: 'EditListingDetailsForm.spaceCategoryPlaceholder' })}
+        </option>
+        {options.map(c => (
+          <option key={c.key} value={c.key}>
+            {c.label}
+          </option>
+        ))}
+      </FieldSelect>
+      {selected ? <p className={css.spaceCategoryHelp}>{selected.description}</p> : null}
+    </>
+  );
+};
+
 // Finds the correct subcategory within the given categories array based on the provided categoryIdToFind.
 const findCategoryConfig = (categories, categoryIdToFind) => {
   return categories?.find(category => category.id === categoryIdToFind);
@@ -245,7 +336,14 @@ const FieldSelectCategory = props => {
 
 // Add collect data for listing fields (both publicData and privateData) based on configuration
 const AddListingFields = props => {
-  const { listingType, listingFieldsConfig, selectedCategories, formId, intl } = props;
+  const {
+    listingType,
+    listingFieldsConfig,
+    selectedCategories,
+    spaceCategory,
+    formId,
+    intl,
+  } = props;
   const targetCategoryIds = Object.values(selectedCategories);
 
   const fields = listingFieldsConfig.reduce((pickedFields, fieldConfig) => {
@@ -256,8 +354,16 @@ const AddListingFields = props => {
     const isProviderScope = ['public', 'private'].includes(scope);
     const isTargetListingType = isFieldForListingType(listingType, fieldConfig);
     const isTargetCategory = isFieldForCategory(targetCategoryIds, fieldConfig);
+    // SpaceLinq: the category has its own picker, and each category asks only its own fields
+    const isTargetSpaceCategory =
+      key !== SPACE_CATEGORY_FIELD_KEY &&
+      isFieldForSpaceListing(listingType, spaceCategory, fieldConfig);
 
-    return isKnownSchemaType && isProviderScope && isTargetListingType && isTargetCategory
+    return isKnownSchemaType &&
+      isProviderScope &&
+      isTargetListingType &&
+      isTargetCategory &&
+      isTargetSpaceCategory
       ? [
           ...pickedFields,
           <CustomExtendedDataField
@@ -383,6 +489,16 @@ const EditListingDetailsForm = props => (
 
       const showListingFields = hasCategories ? allCategoriesChosen : listingType;
 
+      // SpaceLinq: the provider picks a category first, which narrows the listing types
+      const spaceCategory = values[SPACE_CATEGORY_FIELD];
+      const useSpaceCategories = (selectableListingTypes || []).some(lt =>
+        isSpaceLinqListingType(lt.listingType)
+      );
+      const listingTypeOptions = useSpaceCategories
+        ? listingTypesForSpaceCategory(selectableListingTypes, spaceCategory)
+        : selectableListingTypes;
+      const showListingTypeField = !useSpaceCategories || !!spaceCategory;
+
       const classes = classNames(css.root, className);
       const submitReady = (updated && pristine) || ready;
       const submitInProgress = updateInProgress;
@@ -398,15 +514,29 @@ const EditListingDetailsForm = props => (
         <Form className={classes} onSubmit={handleSubmit}>
           <ErrorMessage fetchErrors={fetchErrors} />
 
-          <FieldSelectListingType
-            name="listingType"
-            listingTypes={selectableListingTypes}
-            hasPredefinedListingType={hasPredefinedListingType}
-            onListingTypeChange={onListingTypeChange}
-            formApi={formApi}
-            formId={formId}
-            intl={intl}
-          />
+          {useSpaceCategories ? (
+            <FieldSelectSpaceCategory
+              listingTypes={selectableListingTypes}
+              hasPredefinedListingType={hasPredefinedListingType}
+              onListingTypeChange={onListingTypeChange}
+              formApi={formApi}
+              formId={formId}
+              values={values}
+              intl={intl}
+            />
+          ) : null}
+
+          {showListingTypeField ? (
+            <FieldSelectListingType
+              name="listingType"
+              listingTypes={listingTypeOptions}
+              hasPredefinedListingType={hasPredefinedListingType}
+              onListingTypeChange={onListingTypeChange}
+              formApi={formApi}
+              formId={formId}
+              intl={intl}
+            />
+          ) : null}
 
           {showCategories && isCompatibleCurrency && (
             <FieldSelectCategory
@@ -459,6 +589,7 @@ const EditListingDetailsForm = props => (
               listingType={listingType}
               listingFieldsConfig={listingFieldsConfig}
               selectedCategories={pickSelectedCategories(values)}
+              spaceCategory={spaceCategory}
               formId={formId}
               intl={intl}
             />

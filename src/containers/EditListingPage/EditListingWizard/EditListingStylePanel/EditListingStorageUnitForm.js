@@ -6,6 +6,7 @@ import classNames from 'classnames';
 import { FormattedMessage, useIntl } from '../../../../util/reactIntl';
 import { storageUnitsForListingType, getStorageUnit } from '../../../../config/configSpaceLinq';
 import { required } from '../../../../util/validators';
+import { maskContactDetails } from '../../../../util/contactMasking';
 
 // Import shared components
 import {
@@ -35,7 +36,10 @@ const numberOrNull = value => {
  * @returns {Object} publicData update
  */
 export const storageUnitFormValuesToPublicData = values => {
-  const { storageUnit, ...rest } = values;
+  const { storageUnit, customSpaceType, ...rest } = values;
+  const isCustom = getStorageUnit(storageUnit)?.custom === true;
+  // The provider's own name for a space that fits no standard option
+  const customName = isCustom ? maskContactDetails(`${customSpaceType || ''}`.trim()).text : '';
   const dimensions = DIMENSION_FIELDS.reduce((acc, key) => {
     acc[key] = numberOrNull(rest[key]);
     return acc;
@@ -43,6 +47,7 @@ export const storageUnitFormValuesToPublicData = values => {
   return {
     storageUnit,
     storageUnitDimensions: dimensions,
+    customSpaceType: customName ? customName.slice(0, 40) : null,
     cardStyle: 'grey',
   };
 };
@@ -54,11 +59,12 @@ export const storageUnitFormValuesToPublicData = values => {
  * @returns {Object}
  */
 export const storageUnitInitialValues = publicData => {
-  const { storageUnit, storageUnitDimensions } = publicData || {};
+  const { storageUnit, storageUnitDimensions, customSpaceType } = publicData || {};
   const unit = getStorageUnit(storageUnit);
   const dims = storageUnitDimensions || unit?.dimensions || {};
   return {
     storageUnit,
+    customSpaceType: customSpaceType || '',
     ...DIMENSION_FIELDS.reduce((acc, key) => {
       acc[key] = dims[key] ?? '';
       return acc;
@@ -95,13 +101,14 @@ const StorageUnitOption = props => {
  * @component
  * @param {Object} props
  * @param {string} props.listingType - SpaceLinq listing type id
+ * @param {string} [props.spaceCategory] - space category key, limits the options offered
  * @param {string} props.listingTitle - listing title for the preview
  * @returns {JSX.Element}
  */
 const EditListingStorageUnitForm = props => {
   const intl = useIntl();
-  const { listingType, listingTitle } = props;
-  const units = storageUnitsForListingType(listingType);
+  const { listingType, spaceCategory, listingTitle } = props;
+  const units = storageUnitsForListingType(listingType, spaceCategory);
 
   return (
     <FinalForm
@@ -161,6 +168,23 @@ const EditListingStorageUnitForm = props => {
                 </fieldset>
               )}
             </Field>
+
+            {getStorageUnit(values.storageUnit)?.custom ? (
+              <FieldTextInput
+                className={css.customSpaceType}
+                type="text"
+                name="customSpaceType"
+                id={`${formId}.customSpaceType`}
+                maxLength={40}
+                label={intl.formatMessage({ id: 'EditListingStorageUnitForm.customSpaceType' })}
+                placeholder={intl.formatMessage({
+                  id: 'EditListingStorageUnitForm.customSpaceTypePlaceholder',
+                })}
+                validate={required(
+                  intl.formatMessage({ id: 'EditListingStorageUnitForm.customSpaceTypeRequired' })
+                )}
+              />
+            ) : null}
 
             {values.storageUnit ? (
               <>

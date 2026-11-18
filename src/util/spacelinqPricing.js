@@ -10,13 +10,14 @@
  */
 import { DAYS_PER_MONTH, DAYS_PER_WEEK } from '../config/configSpaceLinq';
 
-export const daysInCycle = cycle => (cycle === 'week' ? DAYS_PER_WEEK : DAYS_PER_MONTH);
+export const daysInCycle = cycle =>
+  cycle === 'day' ? 1 : cycle === 'week' ? DAYS_PER_WEEK : DAYS_PER_MONTH;
 
 /**
  * Convert a per-cycle rate to a daily rate.
  *
  * @param {number} rateMinor - rate in minor units for one cycle
- * @param {'week'|'month'} cycle
+ * @param {'day'|'week'|'month'} cycle
  * @returns {number} daily rate in minor units, rounded to the nearest cent
  */
 export const toDailyRate = (rateMinor, cycle) => {
@@ -30,11 +31,13 @@ export const toDailyRate = (rateMinor, cycle) => {
  * Monthly equivalent of a per-cycle rate.
  *
  * @param {number} rateMinor
- * @param {'week'|'month'} cycle
+ * @param {'day'|'week'|'month'} cycle
  * @returns {number}
  */
 export const toMonthlyRate = (rateMinor, cycle) =>
-  cycle === 'week' ? Math.round((rateMinor / DAYS_PER_WEEK) * DAYS_PER_MONTH) : rateMinor;
+  cycle === 'month' || !cycle
+    ? rateMinor
+    : Math.round((rateMinor / daysInCycle(cycle)) * DAYS_PER_MONTH);
 
 /**
  * Pro-rata amount of a monthly price for a number of days.
@@ -74,19 +77,37 @@ export const estimateMonthlyTotal = (pricing, units = 1, selectedAddOns = []) =>
  * Returns null when the listing has no SpaceLinq pricing.
  *
  * @param {Object} publicData - listing publicData
- * @returns {{ amount: number, perUnit: string, isFrom: boolean }|null}
+ * @returns {{ amount: number, perUnit: string, isFrom: boolean, shortStay: Object|null }|null}
  */
 export const getSpaceLinqDisplayPrice = publicData => {
   const pricing = publicData?.pricing;
   if (!pricing || !Number.isInteger(pricing.rate) || pricing.rate <= 0) {
     return null;
   }
-  const cycle = pricing.cycle === 'week' ? 'week' : 'month';
+  const cycle = ['day', 'week'].includes(pricing.cycle) ? pricing.cycle : 'month';
   const perUnit =
     pricing.model === 'per-pallet'
       ? `per pallet / ${cycle}`
       : pricing.model === 'per-m2'
       ? 'per m² / month'
-      : 'per month';
-  return { amount: pricing.rate, perUnit, isFrom: pricing.model === 'quote' };
+      : pricing.model === 'per-space'
+      ? `per space / ${cycle}`
+      : `per ${cycle}`;
+  // A separate price for stays under a month, when the provider has set one
+  const hasDailyRate =
+    cycle !== 'day' &&
+    pricing.model !== 'quote' &&
+    Number.isInteger(pricing.dailyRate) &&
+    pricing.dailyRate > 0;
+  const shortStay = hasDailyRate
+    ? {
+        amount: pricing.dailyRate,
+        perUnit: ['per-pallet', 'per-space'].includes(pricing.model)
+          ? `per ${pricing.model === 'per-pallet' ? 'pallet' : 'space'} / day`
+          : pricing.model === 'per-m2'
+          ? 'per m² / day'
+          : 'per day',
+      }
+    : null;
+  return { amount: pricing.rate, perUnit, isFrom: pricing.model === 'quote', shortStay };
 };

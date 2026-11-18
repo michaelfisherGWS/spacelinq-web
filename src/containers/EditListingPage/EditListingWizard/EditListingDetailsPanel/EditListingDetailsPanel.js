@@ -17,6 +17,12 @@ import {
   pickCategoryFields,
 } from '../../../../util/fieldHelpers';
 import { isBookingProcessAlias } from '../../../../transactions/transaction';
+import {
+  SPACE_CATEGORY_FIELD_KEY,
+  getSpaceCategory,
+  isFieldForSpaceListing,
+  isSpaceLinqListingType,
+} from '../../../../config/configSpaceLinq';
 
 // Import shared components
 import { H3, ListingLink } from '../../../../components';
@@ -120,6 +126,8 @@ const pickListingFieldsData = (
   listingFieldConfigs
 ) => {
   const targetCategoryIds = Object.values(targetCategories);
+  // SpaceLinq: fields that belong to another space category are cleared
+  const spaceCategory = data[`pub_${SPACE_CATEGORY_FIELD_KEY}`];
 
   return listingFieldConfigs.reduce((fields, fieldConfig) => {
     const { key, scope = 'public', schemaType } = fieldConfig || {};
@@ -129,7 +137,9 @@ const pickListingFieldsData = (
     const isKnownSchemaType = EXTENDED_DATA_SCHEMA_TYPES.includes(schemaType);
     const isTargetScope = scope === targetScope;
     const isTargetListingType = isFieldForListingType(targetListingType, fieldConfig);
-    const isTargetCategory = isFieldForCategory(targetCategoryIds, fieldConfig);
+    const isTargetCategory =
+      isFieldForCategory(targetCategoryIds, fieldConfig) &&
+      isFieldForSpaceListing(targetListingType, spaceCategory, fieldConfig);
 
     if (isKnownSchemaType && isTargetScope && isTargetListingType && isTargetCategory) {
       const fieldValue = data[namespacedKey] != null ? data[namespacedKey] : null;
@@ -249,6 +259,11 @@ const getInitialValues = (
   const listingType = publicData?.listingType || preselectedListingType;
 
   const nestedCategories = pickCategoryFields(publicData, categoryKey, 1, listingCategories);
+  // SpaceLinq: listings saved before categories existed get theirs from the storage option
+  const spaceCategoryMaybe =
+    publicData?.listingType && isSpaceLinqListingType(publicData.listingType)
+      ? { [`pub_${SPACE_CATEGORY_FIELD_KEY}`]: getSpaceCategory(publicData) }
+      : {};
   // Initial values for the form
   return {
     title,
@@ -263,6 +278,7 @@ const getInitialValues = (
       nestedCategories,
       listingFields
     ),
+    ...spaceCategoryMaybe,
     ...initialValuesForListingFields(
       privateData,
       'private',

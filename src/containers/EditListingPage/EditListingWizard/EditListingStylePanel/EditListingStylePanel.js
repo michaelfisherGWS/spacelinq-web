@@ -14,7 +14,7 @@ import EditListingStorageUnitForm, {
   storageUnitFormValuesToPublicData,
   storageUnitInitialValues,
 } from './EditListingStorageUnitForm';
-import { isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
+import { getSpaceCategory, isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
 import css from './EditListingStylePanel.module.css';
 
 import { colorSchemes } from '../../../../util/types';
@@ -53,7 +53,9 @@ const EditListingStylePanel = props => {
 
   const panelHeadingProps = isPublished
     ? {
-        id: isSpaceLinq ? 'EditListingStylePanel.storageOptionTitle' : 'EditListingStylePanel.title',
+        id: isSpaceLinq
+          ? 'EditListingStylePanel.storageOptionTitle'
+          : 'EditListingStylePanel.title',
         values: { listingTitle: <ListingLink listing={listing} />, lineBreak: <br /> },
         messageProps: { listingTitle: listing.attributes.title },
       }
@@ -84,6 +86,7 @@ const EditListingStylePanel = props => {
           <EditListingStorageUnitForm
             className={css.form}
             listingType={listingType}
+            spaceCategory={getSpaceCategory(listing?.attributes?.publicData)}
             disabled={disabled}
             ready={ready}
             fetchErrors={errors}

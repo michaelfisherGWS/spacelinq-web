@@ -209,6 +209,20 @@ const PriceMaybe = props => {
       <p className={css.price}>
         <FormattedMessage id="OrderPanel.price" values={{ priceValue, pricePerUnit }} />
       </p>
+      {spaceLinqPrice?.shortStay ? (
+        <p className={css.shortStayPrice}>
+          <FormattedMessage
+            id="OrderPanel.spaceLinqShortStay"
+            values={{
+              price: formatMoneyIfSupportedCurrency(
+                new sdkTypes.Money(spaceLinqPrice.shortStay.amount, price.currency),
+                intl
+              ),
+              perUnit: spaceLinqPrice.shortStay.perUnit,
+            }}
+          />
+        </p>
+      ) : null}
     </div>
   );
 };
@@ -402,7 +416,10 @@ const OrderPanel = props => {
   const isOrderOpen = !!searchParams.orderOpen;
   const preselectedPriceVariantSlug = searchParams.bookableOption;
 
-  const seatsEnabled = [AVAILABILITY_MULTIPLE_SEATS].includes(listingTypeConfig?.availabilityType);
+  // SpaceLinq: a pricing model with a capacity (pallets, m², spaces) lets customers book several
+  const seatsEnabled =
+    [AVAILABILITY_MULTIPLE_SEATS].includes(listingTypeConfig?.availabilityType) ||
+    !!spaceLinqPricingModels[(publicData?.pricing?.model)]?.capacityLabel;
 
   // Note: publicData contains priceVariationsEnabled if listing is created with priceVariations enabled.
   const isPriceVariationsInUse = !!publicData?.priceVariationsEnabled;
@@ -553,7 +570,10 @@ const OrderPanel = props => {
             finePrintComponent={SubmitFinePrint}
             addOnOptions={publicData?.pricing?.addOns || []}
             minTermMonths={publicData?.pricing?.minTermMonths}
-            ongoingEnabled={isSpaceLinqListingType(publicData?.listingType)}
+            ongoingEnabled={
+              isSpaceLinqListingType(publicData?.listingType) &&
+              publicData?.pricing?.cycle !== 'day'
+            }
             insuranceOffer={publicData?.pricing?.insurance}
             noticeDays={publicData?.pricing?.noticeDays}
             instantBooking={publicData?.pricing?.instantBooking === true}

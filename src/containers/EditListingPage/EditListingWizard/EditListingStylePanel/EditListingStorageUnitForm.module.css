@@ -131,3 +131,7 @@ img.optionIcon {
   width: 88px;
   height: auto;
 }
+
+.customSpaceType {
+  margin-top: 24px;
+}

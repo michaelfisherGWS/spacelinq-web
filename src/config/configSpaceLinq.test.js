@@ -1,49 +1,104 @@
-import { applySpaceLinqListingFields, extraListingFields } from './configSpaceLinq';
+import {
+  applySpaceLinqListingFields,
+  getSpaceCategory,
+  isFieldForSpaceListing,
+  pricingModelFor,
+  spaceCategories,
+  storageUnits,
+  storageUnitsForListingType,
+  addOnsForSpaceCategory,
+} from './configSpaceLinq';
 
-const hosted = [
-  {
-    key: 'storage_type',
-    scope: 'public',
-    schemaType: 'multi-enum',
-    enumOptions: [
-      { option: 'general', label: 'General warehouse' },
-      { option: 'bonded', label: 'Bonded / customs-controlled warehouse' },
-      { option: 'outdoor', label: 'Outdoor / open-air storage' },
-    ],
-    filterConfig: { label: 'Storage type' },
-    showConfig: { label: 'Storage type' },
-    saveConfig: { label: 'Storage type' },
-  },
-  {
-    key: 'services',
-    scope: 'public',
-    schemaType: 'multi-enum',
-    enumOptions: [{ option: '3pl', label: 'Third-party logistics (3PL)' }],
-    filterConfig: { label: 'Services offered' },
-    showConfig: { label: 'Services offered' },
-    saveConfig: { label: 'Services offered' },
-  },
-];
-
-describe('applySpaceLinqListingFields', () => {
-  it('rewords Console fields, hides retired ones and adds the extra fields', () => {
-    const fields = applySpaceLinqListingFields(hosted);
-    const facility = fields.find(f => f.key === 'storage_type');
-    expect(facility.showConfig.label).toEqual('Facility type');
-    expect(facility.enumOptions.map(o => o.label)).toEqual([
-      'General warehouse',
-      'Customs-controlled area (bonded)',
-    ]);
-    // option keys are untouched, so existing listing data still matches
-    expect(facility.enumOptions.map(o => o.option)).toEqual(['general', 'bonded']);
-    expect(fields.find(f => f.key === 'services')).toBeUndefined();
-    expect(fields).toHaveLength(1 + extraListingFields.length);
+describe('space categories', () => {
+  it('gives every category at least one storage option for each of its listing types', () => {
+    spaceCategories.forEach(c => {
+      c.listingTypes
+        .filter(lt => lt !== 'quote-on-request')
+        .forEach(lt => {
+          expect(storageUnitsForListingType(lt, c.key).length).toBeGreaterThan(0);
+        });
+    });
   });
 
-  it('lets a Console field with the same key replace an extra field', () => {
-    const consoleField = { ...extraListingFields[0], showConfig: { label: 'From Console' } };
-    const fields = applySpaceLinqListingFields([consoleField]);
-    expect(fields.filter(f => f.key === consoleField.key)).toHaveLength(1);
-    expect(fields[0].showConfig.label).toEqual('From Console');
+  it('puts every storage option in a known category', () => {
+    const keys = spaceCategories.map(c => c.key);
+    storageUnits.forEach(u => {
+      expect(u.categories.length).toBeGreaterThan(0);
+      u.categories.forEach(c => expect(keys).toContain(c));
+    });
+  });
+
+  it('offers a homeowner parking options without pallets', () => {
+    const options = storageUnitsForListingType('dedicated-space', 'parking').map(u => u.key);
+    expect(options).toContain('parking-space');
+    expect(options).toContain('caravan-boat-space');
+    expect(options).not.toContain('secure-cage');
+  });
+
+  it('places listings saved before categories existed', () => {
+    expect(getSpaceCategory({ storageUnit: 'garage' })).toBe('self-storage');
+    expect(getSpaceCategory({ storageUnit: 'parking-space' })).toBe('parking');
+    expect(getSpaceCategory({ storageUnit: 'standard-pallet' })).toBe('warehousing');
+    expect(getSpaceCategory({ storageUnit: 'garage', spaceCategory: 'parking' })).toBe('parking');
+    expect(getSpaceCategory({ spaceCategory: 'made-up' })).toBe('warehousing');
+  });
+
+  it('prices parking per space and keeps warehousing on its listing type default', () => {
+    expect(pricingModelFor('dedicated-space', 'parking')).toBe('per-space');
+    expect(pricingModelFor('dedicated-space', 'warehousing')).toBe('fixed-monthly');
+    expect(pricingModelFor('pallet-storage', 'warehousing')).toBe('per-pallet');
+    expect(pricingModelFor('quote-on-request', 'parking')).toBe('quote');
+  });
+
+  it('offers each category its own optional services', () => {
+    expect(addOnsForSpaceCategory('parking').map(a => a.key)).toEqual([
+      'ev-charging',
+      'power-supply',
+    ]);
+    expect(addOnsForSpaceCategory('warehousing').map(a => a.key)).toContain('pallet-hire');
+    expect(addOnsForSpaceCategory(undefined).map(a => a.key)).toContain('wms');
+  });
+});
+
+describe('listing fields by category', () => {
+  const hosted = [
+    {
+      key: 'storageType',
+      schemaType: 'multi-enum',
+      enumOptions: [],
+      showConfig: { label: 'Storage type' },
+      saveConfig: { label: 'Storage type' },
+      filterConfig: { label: 'Storage type' },
+    },
+  ];
+  const fields = applySpaceLinqListingFields(hosted);
+  const field = key => fields.find(f => f.key === key);
+
+  it('asks warehouse questions only of warehousing listings', () => {
+    expect(isFieldForSpaceListing('dedicated-space', 'parking', field('storageType'))).toBe(false);
+    expect(isFieldForSpaceListing('dedicated-space', 'parking', field('compliance'))).toBe(false);
+    expect(isFieldForSpaceListing('pallet-storage', 'warehousing', field('compliance'))).toBe(true);
+    // No category saved yet means warehousing
+    expect(isFieldForSpaceListing('pallet-storage', undefined, field('storageType'))).toBe(true);
+  });
+
+  it('asks parking questions only of parking and event listings', () => {
+    expect(isFieldForSpaceListing('dedicated-space', 'parking', field('vehicles_accepted'))).toBe(
+      true
+    );
+    expect(
+      isFieldForSpaceListing('dedicated-space', 'self-storage', field('vehicles_accepted'))
+    ).toBe(false);
+    expect(isFieldForSpaceListing('dedicated-space', 'other', field('access_security'))).toBe(true);
+  });
+
+  it('does not limit listing types outside SpaceLinq', () => {
+    expect(isFieldForSpaceListing('sell-bicycles', undefined, field('storageType'))).toBe(true);
+  });
+
+  it('includes the searchable category field', () => {
+    expect(field('spaceCategory').enumOptions.map(o => o.option)).toEqual(
+      spaceCategories.map(c => c.key)
+    );
   });
 });

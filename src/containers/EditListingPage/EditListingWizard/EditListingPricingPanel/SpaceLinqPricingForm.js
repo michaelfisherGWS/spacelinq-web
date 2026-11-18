@@ -9,8 +9,10 @@ import { types as sdkTypes } from '../../../../util/sdkLoader';
 import { formatMoney } from '../../../../util/currency';
 import {
   pricingModels,
-  defaultPricingModelForListingType,
-  addOns as addOnOptions,
+  pricingModelFor,
+  addOnsForSpaceCategory,
+  getSpaceCategory,
+  getSpaceCategoryConfig,
   serviceRates as serviceRateOptions,
 } from '../../../../config/configSpaceLinq';
 import { toDailyRate, toMonthlyRate } from '../../../../util/spacelinqPricing';
@@ -59,9 +61,11 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
       acc[`ratePrice_${r.key}`] = minorToMoney(r.price, currency);
       return acc;
     }, {}),
-    model: pricing.model || defaultPricingModelForListingType[listingType] || 'fixed-monthly',
+    model: pricing.model || pricingModelFor(listingType, getSpaceCategory(publicData)),
     rate: minorToMoney(pricing.rate, currency),
-    cycle: pricing.cycle || 'month',
+    cycle: pricing.cycle === 'day' ? 'month' : pricing.cycle || 'month',
+    stayType: pricing.cycle === 'day' ? 'daily' : 'monthly',
+    dailyRate: minorToMoney(pricing.dailyRate, currency),
     minTermMonths: pricing.minTermMonths ?? '',
     minMonthlySpend: minorToMoney(pricing.minMonthlySpend, currency),
     indicativeMax: minorToMoney(pricing.indicativeMax, currency),
@@ -79,25 +83,45 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
  *
  * @param {Object} values - form values
  * @param {string} currency
+ * @param {string} [spaceCategory] - space category key; limits what the listing can offer
  * @returns {Object} { price, publicData }
  */
-export const spaceLinqPricingToUpdateValues = (values, currency) => {
+export const spaceLinqPricingToUpdateValues = (values, currency, spaceCategory) => {
   const { model, cycle: rawCycle, minTermMonths, addOnKeys = [], rateKeys = [] } = values;
-  const rateCard = rateKeys
-    .map(key => ({ key, price: moneyToMinor(values[`ratePrice_${key}`]) }))
-    .filter(r => Number.isInteger(r.price) && r.price > 0);
-  const cycle = model === 'per-pallet' ? rawCycle || 'week' : 'month';
+  const category = getSpaceCategoryConfig(spaceCategory);
+  // Short stays only: the rate is per day and there is no monthly price
+  const isDailyOnly =
+    model !== 'quote' && category?.dailyOnly === true && values.stayType === 'daily';
+  const rateCard =
+    category && !category.services
+      ? []
+      : rateKeys
+          .map(key => ({ key, price: moneyToMinor(values[`ratePrice_${key}`]) }))
+          .filter(r => Number.isInteger(r.price) && r.price > 0);
+  const cycle = isDailyOnly ? 'day' : model === 'per-pallet' ? rawCycle || 'week' : 'month';
   const rate = moneyToMinor(values.rate);
-  const addOns = addOnKeys
-    .map(key => ({ key, price: moneyToMinor(values[`addOnPrice_${key}`]) }))
-    .filter(a => Number.isInteger(a.price) && a.price > 0);
+  const offeredAddOnKeys = addOnsForSpaceCategory(spaceCategory).map(a => a.key);
+  // Optional services are monthly prices, so a daily-only listing has none
+  const addOns = isDailyOnly
+    ? []
+    : addOnKeys
+        .filter(key => offeredAddOnKeys.includes(key))
+        .map(key => ({ key, price: moneyToMinor(values[`addOnPrice_${key}`]) }))
+        .filter(a => Number.isInteger(a.price) && a.price > 0);
+  // A separate price for stays under a month. Left empty, short stays use the
+  // monthly (or weekly) price divided into days.
+  const dailyRateMinor = moneyToMinor(values.dailyRate);
+  const dailyRate = !isDailyOnly && model !== 'quote' && dailyRateMinor > 0 ? dailyRateMinor : null;
 
   // Goods insurance: a rate per $1,000 of goods per month, and the most the provider will cover
   const insuranceRate = moneyToMinor(values.insuranceRate);
   const insuranceMaxValue = moneyToMinor(values.insuranceMaxValue);
   const insuranceDgRate = moneyToMinor(values.insuranceDgRate);
   const insurance =
-    (values.insuranceOffered || []).includes('yes') && insuranceRate > 0 && insuranceMaxValue > 0
+    (!category || category.goodsInsurance) &&
+    (values.insuranceOffered || []).includes('yes') &&
+    insuranceRate > 0 &&
+    insuranceMaxValue > 0
       ? {
           rate: insuranceRate,
           dgRate: insuranceDgRate > 0 ? insuranceDgRate : null,
@@ -110,15 +134,17 @@ export const spaceLinqPricingToUpdateValues = (values, currency) => {
     model,
     rate,
     cycle,
+    dailyRate,
     currency,
-    minTermMonths: minTermMonths ? Number(minTermMonths) : null,
-    minMonthlySpend: moneyToMinor(values.minMonthlySpend),
+    minTermMonths: !isDailyOnly && minTermMonths ? Number(minTermMonths) : null,
+    minMonthlySpend: isDailyOnly ? null : moneyToMinor(values.minMonthlySpend),
     indicativeMax: model === 'quote' ? moneyToMinor(values.indicativeMax) : null,
     addOns,
     rateCard,
     insurance,
     instantBooking: (values.instantBooking || []).includes('yes'),
-    noticeDays: ['7', '14'].includes(values.noticeDays) ? Number(values.noticeDays) : null,
+    noticeDays:
+      !isDailyOnly && ['7', '14'].includes(values.noticeDays) ? Number(values.noticeDays) : null,
   };
 
   // Quotes show an indicative monthly "from" price; bookable models use the daily rate.
@@ -141,7 +167,11 @@ const required = message => value =>
  */
 const SpaceLinqPricingForm = props => {
   const intl = useIntl();
-  const { marketplaceCurrency } = props;
+  const { marketplaceCurrency, spaceCategory } = props;
+  const category = getSpaceCategoryConfig(spaceCategory);
+  const addOnOptions = addOnsForSpaceCategory(spaceCategory);
+  const showRateCard = !category || category.services;
+  const showInsurance = !category || category.goodsInsurance;
   const currencyConfig = appSettings.getCurrencyFormatting(marketplaceCurrency);
 
   return (
@@ -165,7 +195,9 @@ const SpaceLinqPricingForm = props => {
         const modelConfig = pricingModels[values.model] || {};
         const isQuote = values.model === 'quote';
         const isPallet = values.model === 'per-pallet';
-        const cycle = isPallet ? values.cycle || 'week' : 'month';
+        const canBeDailyOnly = !isQuote && category?.dailyOnly === true;
+        const isDailyOnly = canBeDailyOnly && values.stayType === 'daily';
+        const cycle = isDailyOnly ? 'day' : isPallet ? values.cycle || 'week' : 'month';
         const rateMinor = moneyToMinor(values.rate);
         const { updateListingError, showListingsError } = fetchErrors || {};
         const submitDisabled = invalid || disabled || updateInProgress;
@@ -183,6 +215,22 @@ const SpaceLinqPricingForm = props => {
                 values={{ model: modelConfig.label }}
               />
             </p>
+
+            {canBeDailyOnly ? (
+              <fieldset className={css.stayType}>
+                <legend className={css.cycleLegend}>
+                  <FormattedMessage id="SpaceLinqPricingForm.stayTypeLabel" />
+                </legend>
+                {['monthly', 'daily'].map(t => (
+                  <label key={t} className={css.cycleOption}>
+                    <Field name="stayType" component="input" type="radio" value={t} />
+                    <span>
+                      <FormattedMessage id={`SpaceLinqPricingForm.stayType.${t}`} />
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            ) : null}
 
             <div className={css.row}>
               <FieldCurrencyInput
@@ -214,6 +262,8 @@ const SpaceLinqPricingForm = props => {
                     id={
                       isQuote
                         ? 'SpaceLinqPricingForm.perMonthFrom'
+                        : isDailyOnly
+                        ? 'SpaceLinqPricingForm.perDay'
                         : 'SpaceLinqPricingForm.perMonth'
                     }
                   />
@@ -229,7 +279,23 @@ const SpaceLinqPricingForm = props => {
               </p>
             ) : null}
 
-            {isQuote ? (
+            {isQuote || isDailyOnly ? null : (
+              <>
+                <FieldCurrencyInput
+                  placeholder="0.00"
+                  id={`${formId}.dailyRate`}
+                  name="dailyRate"
+                  className={css.field}
+                  label={intl.formatMessage({ id: 'SpaceLinqPricingForm.dailyRate' })}
+                  currencyConfig={currencyConfig}
+                />
+                <p className={css.hint}>
+                  <FormattedMessage id="SpaceLinqPricingForm.dailyRateHelp" />
+                </p>
+              </>
+            )}
+
+            {isDailyOnly ? null : isQuote ? (
               <FieldCurrencyInput
                 placeholder="0.00"
                 id={`${formId}.indicativeMax`}
@@ -279,151 +345,167 @@ const SpaceLinqPricingForm = props => {
                   <p className={css.hint}>
                     <FormattedMessage id="SpaceLinqPricingForm.instantBookingHelp" />
                   </p>
-                  <FieldSelect
-                    id={`${formId}.noticeDays`}
-                    name="noticeDays"
-                    className={css.field}
-                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.noticeDays' })}
-                  >
-                    <option value="month">
-                      {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.month' })}
-                    </option>
-                    <option value="14">
-                      {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.14' })}
-                    </option>
-                    <option value="7">
-                      {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.7' })}
-                    </option>
-                  </FieldSelect>
+                  {isDailyOnly ? null : (
+                    <FieldSelect
+                      id={`${formId}.noticeDays`}
+                      name="noticeDays"
+                      className={css.field}
+                      label={intl.formatMessage({ id: 'SpaceLinqPricingForm.noticeDays' })}
+                    >
+                      <option value="month">
+                        {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.month' })}
+                      </option>
+                      <option value="14">
+                        {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.14' })}
+                      </option>
+                      <option value="7">
+                        {intl.formatMessage({ id: 'SpaceLinqPricingForm.notice.7' })}
+                      </option>
+                    </FieldSelect>
+                  )}
                 </div>
               </>
             )}
 
-            <h3 className={css.sectionHeading}>
-              <FormattedMessage id="SpaceLinqPricingForm.addOnsHeading" />
-            </h3>
-            <p className={css.hint}>
-              <FormattedMessage id="SpaceLinqPricingForm.addOnsHelp" />
-            </p>
-            {addOnOptions.map(a => {
-              const enabled = (values.addOnKeys || []).includes(a.key);
-              return (
-                <div key={a.key} className={css.addOn}>
+            {isDailyOnly || addOnOptions.length === 0 ? null : (
+              <>
+                <h3 className={css.sectionHeading}>
+                  <FormattedMessage id="SpaceLinqPricingForm.addOnsHeading" />
+                </h3>
+                <p className={css.hint}>
+                  <FormattedMessage id="SpaceLinqPricingForm.addOnsHelp" />
+                </p>
+                {addOnOptions.map(a => {
+                  const enabled = (values.addOnKeys || []).includes(a.key);
+                  return (
+                    <div key={a.key} className={css.addOn}>
+                      <FieldCheckbox
+                        id={`${formId}.addOn.${a.key}`}
+                        name="addOnKeys"
+                        value={a.key}
+                        label={a.label}
+                      />
+                      {enabled ? (
+                        <FieldCurrencyInput
+                          placeholder="0.00"
+                          id={`${formId}.addOnPrice_${a.key}`}
+                          name={`addOnPrice_${a.key}`}
+                          className={css.addOnPrice}
+                          label={intl.formatMessage({ id: 'SpaceLinqPricingForm.addOnPrice' })}
+                          currencyConfig={currencyConfig}
+                          validate={required(
+                            intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
+                          )}
+                        />
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {showInsurance ? (
+              <>
+                <h3 className={css.sectionHeading}>
+                  <FormattedMessage id="SpaceLinqPricingForm.insuranceHeading" />
+                </h3>
+                <p className={css.hint}>
+                  <FormattedMessage id="SpaceLinqPricingForm.insuranceHelp" />
+                </p>
+                <div className={css.insurance}>
                   <FieldCheckbox
-                    id={`${formId}.addOn.${a.key}`}
-                    name="addOnKeys"
-                    value={a.key}
-                    label={a.label}
+                    id={`${formId}.insuranceOffered`}
+                    name="insuranceOffered"
+                    value="yes"
+                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceOffered' })}
                   />
-                  {enabled ? (
-                    <FieldCurrencyInput
-                      placeholder="0.00"
-                      id={`${formId}.addOnPrice_${a.key}`}
-                      name={`addOnPrice_${a.key}`}
-                      className={css.addOnPrice}
-                      label={intl.formatMessage({ id: 'SpaceLinqPricingForm.addOnPrice' })}
-                      currencyConfig={currencyConfig}
-                      validate={required(
-                        intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
-                      )}
-                    />
+                  {(values.insuranceOffered || []).includes('yes') ? (
+                    <div className={css.insuranceFields}>
+                      <FieldCurrencyInput
+                        placeholder="0.00"
+                        id={`${formId}.insuranceRate`}
+                        name="insuranceRate"
+                        className={css.insuranceField}
+                        label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceRate' })}
+                        currencyConfig={currencyConfig}
+                        validate={required(
+                          intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
+                        )}
+                      />
+                      <FieldCurrencyInput
+                        placeholder="0.00"
+                        id={`${formId}.insuranceDgRate`}
+                        name="insuranceDgRate"
+                        className={css.insuranceField}
+                        label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceDgRate' })}
+                        currencyConfig={currencyConfig}
+                      />
+                      <FieldCurrencyInput
+                        placeholder="0.00"
+                        id={`${formId}.insuranceMaxValue`}
+                        name="insuranceMaxValue"
+                        className={css.insuranceField}
+                        label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceMaxValue' })}
+                        currencyConfig={currencyConfig}
+                        validate={required(
+                          intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
+                        )}
+                      />
+                      <FieldTextInput
+                        type="text"
+                        id={`${formId}.insuranceExclusions`}
+                        name="insuranceExclusions"
+                        className={css.insuranceField}
+                        maxLength={300}
+                        label={intl.formatMessage({
+                          id: 'SpaceLinqPricingForm.insuranceExclusions',
+                        })}
+                      />
+                    </div>
                   ) : null}
                 </div>
-              );
-            })}
+              </>
+            ) : null}
 
-            <h3 className={css.sectionHeading}>
-              <FormattedMessage id="SpaceLinqPricingForm.insuranceHeading" />
-            </h3>
-            <p className={css.hint}>
-              <FormattedMessage id="SpaceLinqPricingForm.insuranceHelp" />
-            </p>
-            <div className={css.insurance}>
-              <FieldCheckbox
-                id={`${formId}.insuranceOffered`}
-                name="insuranceOffered"
-                value="yes"
-                label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceOffered' })}
-              />
-              {(values.insuranceOffered || []).includes('yes') ? (
-                <div className={css.insuranceFields}>
-                  <FieldCurrencyInput
-                    placeholder="0.00"
-                    id={`${formId}.insuranceRate`}
-                    name="insuranceRate"
-                    className={css.insuranceField}
-                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceRate' })}
-                    currencyConfig={currencyConfig}
-                    validate={required(
-                      intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
-                    )}
-                  />
-                  <FieldCurrencyInput
-                    placeholder="0.00"
-                    id={`${formId}.insuranceDgRate`}
-                    name="insuranceDgRate"
-                    className={css.insuranceField}
-                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceDgRate' })}
-                    currencyConfig={currencyConfig}
-                  />
-                  <FieldCurrencyInput
-                    placeholder="0.00"
-                    id={`${formId}.insuranceMaxValue`}
-                    name="insuranceMaxValue"
-                    className={css.insuranceField}
-                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceMaxValue' })}
-                    currencyConfig={currencyConfig}
-                    validate={required(
-                      intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
-                    )}
-                  />
-                  <FieldTextInput
-                    type="text"
-                    id={`${formId}.insuranceExclusions`}
-                    name="insuranceExclusions"
-                    className={css.insuranceField}
-                    maxLength={300}
-                    label={intl.formatMessage({ id: 'SpaceLinqPricingForm.insuranceExclusions' })}
-                  />
-                </div>
-              ) : null}
-            </div>
-
-            <h3 className={css.sectionHeading}>
-              <FormattedMessage id="SpaceLinqPricingForm.rateCardHeading" />
-            </h3>
-            <p className={css.hint}>
-              <FormattedMessage id="SpaceLinqPricingForm.rateCardHelp" />
-            </p>
-            {serviceRateOptions.map(r => {
-              const enabled = (values.rateKeys || []).includes(r.key);
-              return (
-                <div key={r.key} className={css.addOn}>
-                  <FieldCheckbox
-                    id={`${formId}.rate.${r.key}`}
-                    name="rateKeys"
-                    value={r.key}
-                    label={r.label}
-                  />
-                  {enabled ? (
-                    <FieldCurrencyInput
-                      placeholder="0.00"
-                      id={`${formId}.ratePrice_${r.key}`}
-                      name={`ratePrice_${r.key}`}
-                      className={css.addOnPrice}
-                      label={intl.formatMessage(
-                        { id: 'SpaceLinqPricingForm.ratePrice' },
-                        { unit: r.unit }
-                      )}
-                      currencyConfig={currencyConfig}
-                      validate={required(
-                        intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
-                      )}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
+            {showRateCard ? (
+              <>
+                <h3 className={css.sectionHeading}>
+                  <FormattedMessage id="SpaceLinqPricingForm.rateCardHeading" />
+                </h3>
+                <p className={css.hint}>
+                  <FormattedMessage id="SpaceLinqPricingForm.rateCardHelp" />
+                </p>
+                {serviceRateOptions.map(r => {
+                  const enabled = (values.rateKeys || []).includes(r.key);
+                  return (
+                    <div key={r.key} className={css.addOn}>
+                      <FieldCheckbox
+                        id={`${formId}.rate.${r.key}`}
+                        name="rateKeys"
+                        value={r.key}
+                        label={r.label}
+                      />
+                      {enabled ? (
+                        <FieldCurrencyInput
+                          placeholder="0.00"
+                          id={`${formId}.ratePrice_${r.key}`}
+                          name={`ratePrice_${r.key}`}
+                          className={css.addOnPrice}
+                          label={intl.formatMessage(
+                            { id: 'SpaceLinqPricingForm.ratePrice' },
+                            { unit: r.unit }
+                          )}
+                          currencyConfig={currencyConfig}
+                          validate={required(
+                            intl.formatMessage({ id: 'SpaceLinqPricingForm.rateRequired' })
+                          )}
+                        />
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </>
+            ) : null}
 
             {updateListingError ? (
               <p className={css.error}>

@@ -75,3 +75,13 @@
     margin-top: 100px;
   }
 }
+
+.spaceCategoryHelp {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: -12px 0 24px 0;
+
+  @media (--viewportMedium) {
+    margin: -16px 0 32px 0;
+  }
+}

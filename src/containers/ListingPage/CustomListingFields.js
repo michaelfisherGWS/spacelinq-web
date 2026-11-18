@@ -9,6 +9,8 @@ import {
   pickCustomFieldProps,
 } from '../../util/fieldHelpers.js';
 
+import { getSpaceCategory, isFieldForSpaceListing } from '../../config/configSpaceLinq';
+
 import CustomExtendedDataSection from '../../components/CustomExtendedDataSection/CustomExtendedDataSection.js';
 
 /**
@@ -28,8 +30,12 @@ const CustomListingFields = props => {
   const currentCategories = Object.values(categoriesObj);
 
   // Fields are shown by default. Set showConfig.displayOnListingPage to false to explicitly hide a field.
+  // SpaceLinq: only the fields that belong to the listing's space category are shown.
+  const spaceCategory = getSpaceCategory(publicData);
   const displayableFieldConfigs = listingFieldConfigs.filter(
-    fieldConfig => fieldConfig.showConfig?.displayOnListingPage !== false
+    fieldConfig =>
+      fieldConfig.showConfig?.displayOnListingPage !== false &&
+      isFieldForSpaceListing(publicData?.listingType, spaceCategory, fieldConfig)
   );
 
   const isFieldForSelectedCategories = fieldConfig => {

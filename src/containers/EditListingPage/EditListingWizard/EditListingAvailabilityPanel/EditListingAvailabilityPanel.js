@@ -19,7 +19,10 @@ import SpaceLinqAvailabilityForm, {
   capacityFromPlan,
   SPACELINQ_DEFAULT_TIMEZONE,
 } from './SpaceLinqAvailabilityForm';
-import { isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
+import {
+  isSpaceLinqListingType,
+  pricingModels as spaceLinqPricingModels,
+} from '../../../../config/configSpaceLinq';
 
 import css from './EditListingAvailabilityPanel.module.css';
 
@@ -202,7 +205,10 @@ const EditListingAvailabilityPanel = props => {
   const listingTypeConfig = listingTypes.find(conf => conf.listingType === listingType);
 
   const useFullDays = isFullDay(unitType);
-  const useMultipleSeats = listingTypeConfig?.availabilityType === AVAILABILITY_MULTIPLE_SEATS;
+  // SpaceLinq: a pricing model with a capacity (pallets, m², spaces) has several units to book
+  const useMultipleSeats =
+    listingTypeConfig?.availabilityType === AVAILABILITY_MULTIPLE_SEATS ||
+    !!spaceLinqPricingModels[(listingAttributes?.publicData?.pricing?.model)]?.capacityLabel;
 
   const hasAvailabilityPlan = !!listingAttributes?.availabilityPlan;
   const isPublished = listing?.id && listingAttributes?.state !== LISTING_STATE_DRAFT;

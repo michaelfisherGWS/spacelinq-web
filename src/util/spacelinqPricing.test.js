@@ -58,7 +58,7 @@ describe('getSpaceLinqDisplayPrice', () => {
   it('shows pallet pricing per week', () => {
     expect(
       getSpaceLinqDisplayPrice({ pricing: { model: 'per-pallet', rate: 1400, cycle: 'week' } })
-    ).toEqual({ amount: 1400, perUnit: 'per pallet / week', isFrom: false });
+    ).toEqual({ amount: 1400, perUnit: 'per pallet / week', isFrom: false, shortStay: null });
   });
   it('marks quotes as "from"', () => {
     expect(getSpaceLinqDisplayPrice({ pricing: { model: 'quote', rate: 50000 } }).isFrom).toBe(
@@ -67,5 +67,32 @@ describe('getSpaceLinqDisplayPrice', () => {
   });
   it('returns null without pricing', () => {
     expect(getSpaceLinqDisplayPrice({})).toBe(null);
+  });
+});
+
+describe('daily pricing', () => {
+  const { getSpaceLinqDisplayPrice } = require('./spacelinqPricing');
+
+  it('keeps a daily rate as the listing price', () => {
+    expect(toDailyRate(2500, 'day')).toBe(2500);
+  });
+  it('shows a per-space listing by the month with its short-stay rate', () => {
+    expect(
+      getSpaceLinqDisplayPrice({
+        pricing: { model: 'per-space', cycle: 'month', rate: 18000, dailyRate: 1500 },
+      })
+    ).toEqual({
+      amount: 18000,
+      perUnit: 'per space / month',
+      isFrom: false,
+      shortStay: { amount: 1500, perUnit: 'per space / day' },
+    });
+  });
+  it('shows a day-only listing by the day, with no separate short-stay rate', () => {
+    expect(
+      getSpaceLinqDisplayPrice({
+        pricing: { model: 'per-space', cycle: 'day', rate: 2500, dailyRate: 1500 },
+      })
+    ).toEqual({ amount: 2500, perUnit: 'per space / day', isFrom: false, shortStay: null });
   });
 });
