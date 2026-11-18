@@ -122,6 +122,8 @@ export const answerPendingInstalments = (sdk, agreementId, transition) =>
   });
 
 export const SERVICE_CODE_PREFIX = 'line-item/service-';
+// The marketplace fee on services shares the prefix but is not a charge to the customer
+const SERVICE_COMMISSION_CODE = 'line-item/service-commission';
 export const PAY_ERROR_NO_CARD = 'no-card';
 export const PAY_ERROR_CARD_FAILED = 'card-failed';
 
@@ -216,5 +218,10 @@ export const updateInstalmentCharges = (tx, charges) =>
  */
 export const serviceChargesTotal = tx =>
   (tx?.attributes?.lineItems || [])
-    .filter(item => item.code.startsWith(SERVICE_CODE_PREFIX) && !item.reversal)
+    .filter(
+      item =>
+        item.code.startsWith(SERVICE_CODE_PREFIX) &&
+        item.code !== SERVICE_COMMISSION_CODE &&
+        !item.reversal
+    )
     .reduce((sum, item) => sum + item.lineTotal.amount, 0);
