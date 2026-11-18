@@ -15,11 +15,14 @@ import EditListingAvailabilityPlanForm from './EditListingAvailabilityPlanForm';
 import EditListingAvailabilityExceptionForm from './EditListingAvailabilityExceptionForm';
 import WeeklyCalendar from './WeeklyCalendar/WeeklyCalendar';
 import SpaceLinqAvailabilityForm, {
+  blockedHoursFromFormValues,
+  blockedHoursToFormValues,
   createSpaceLinqAvailabilityPlan,
   capacityFromPlan,
   SPACELINQ_DEFAULT_TIMEZONE,
 } from './SpaceLinqAvailabilityForm';
 import {
+  HOURLY_LISTING_TYPE,
   isSpaceLinqListingType,
   pricingModels as spaceLinqPricingModels,
 } from '../../../../config/configSpaceLinq';
@@ -110,8 +113,8 @@ const createAvailabilityPlan = values => ({
 });
 
 // SpaceLinq: availability plan from the simple setup form
-const createAvailabilityPlanForSpaceLinq = (capacity, timezone) => ({
-  availabilityPlan: createSpaceLinqAvailabilityPlan(capacity, timezone),
+const createAvailabilityPlanForSpaceLinq = (capacity, timezone, blockedHours) => ({
+  availabilityPlan: createSpaceLinqAvailabilityPlan(capacity, timezone, blockedHours),
 });
 
 //////////////////////////////////
@@ -248,13 +251,16 @@ const EditListingAvailabilityPanel = props => {
 
   // SpaceLinq: simple setup (capacity + access hours) generates the availability plan
   const isSpaceLinq = isSpaceLinqListingType(listingType);
+  const isHourlySpace = listingType === HOURLY_LISTING_TYPE;
   const [spaceLinqSaved, setSpaceLinqSaved] = useState(false);
   const handleSpaceLinqSubmit = values => {
     const capacity = useMultipleSeats ? Number(values.capacity) : 1;
     const timezone = listingAttributes?.availabilityPlan?.timezone || SPACELINQ_DEFAULT_TIMEZONE;
+    // Space booked by the hour can have regular hours when it cannot be booked
+    const blockedHours = isHourlySpace ? blockedHoursFromFormValues(values) : null;
     return onSubmit({
-      ...createAvailabilityPlanForSpaceLinq(capacity, timezone),
-      publicData: { accessHours: values.accessHours || '' },
+      ...createAvailabilityPlanForSpaceLinq(capacity, timezone, blockedHours),
+      publicData: { accessHours: values.accessHours || '', blockedHours },
     })
       .then(() => setSpaceLinqSaved(true))
       .catch(() => {
@@ -323,9 +329,11 @@ const EditListingAvailabilityPanel = props => {
         <SpaceLinqAvailabilityForm
           listingType={listingType}
           pricingModel={listingAttributes?.publicData?.pricing?.model}
+          isHourly={isHourlySpace}
           initialValues={{
             capacity: capacityFromPlan(listingAttributes?.availabilityPlan) || '',
             accessHours: listingAttributes?.publicData?.accessHours || '',
+            ...blockedHoursToFormValues(listingAttributes?.publicData?.blockedHours),
           }}
           onSubmit={handleSpaceLinqSubmit}
           inProgress={updateInProgress}
