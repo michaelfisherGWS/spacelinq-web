@@ -77,6 +77,9 @@
   height: 48px;
   flex-shrink: 0;
   color: var(--marketplaceColor);
+  /* Outline icons: site-wide styles would otherwise fill the shapes in */
+  fill: none;
+  stroke: currentColor;
 }
 
 .label {
