@@ -1,0 +1,111 @@
+@import '../../styles/customMediaQueries.css';
+
+.root {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px 24px;
+
+  @media (--viewportMedium) {
+    padding: 64px 24px 96px 24px;
+  }
+}
+
+.title {
+  margin: 0 0 16px 0;
+}
+
+.help,
+.detail {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 0;
+}
+
+.help {
+  margin-bottom: 24px;
+}
+
+.notice {
+  padding: 12px 16px;
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorAttentionSubtle);
+}
+
+.error {
+  color: var(--colorFail);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--colorGrey100);
+
+  @media (--viewportMedium) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.label {
+  margin: 0;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.verified,
+.toCheck,
+.expired {
+  composes: marketplaceTinyFontStyles from global;
+  display: inline-block;
+  margin: 0 0 0 8px;
+  padding: 0 8px;
+  border-radius: 12px;
+  font-weight: var(--fontWeightSemiBold);
+  vertical-align: middle;
+}
+
+.verified {
+  color: var(--colorWhite);
+  background-color: var(--colorSuccess);
+}
+
+.toCheck {
+  color: var(--colorGrey700);
+  background-color: var(--colorAttentionSubtle);
+}
+
+.expired {
+  color: var(--colorWhite);
+  background-color: var(--colorFail);
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+.verify {
+  min-height: 44px;
+  padding: 0 24px;
+
+  @media (--viewportMedium) {
+    width: 160px;
+  }
+}
+
+.remove {
+  composes: marketplaceSmallFontStyles from global;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--colorGrey700);
+  text-decoration: underline;
+  cursor: pointer;
+}

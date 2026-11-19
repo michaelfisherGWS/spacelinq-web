@@ -190,3 +190,10 @@ export const deleteUserAccount = body => {
 export const spaceLinqCustomerCompany = body => {
   return post('/api/spacelinq/customer-company', body);
 };
+
+// SpaceLinq: the operator's certificate verification screen (operators only).
+//
+// See `server/api/spacelinq-admin-certificates.js`.
+export const spaceLinqAdminCertificates = body => {
+  return post('/api/spacelinq/admin/certificates', body);
+};

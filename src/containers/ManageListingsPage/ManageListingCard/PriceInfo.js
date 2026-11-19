@@ -4,8 +4,12 @@ import { FormattedMessage, useIntl } from '../../../util/reactIntl';
 import { displayPrice, isPriceVariationsEnabled } from '../../../util/configHelpers';
 import { useConfiguration } from '../../../context/configurationContext';
 import { formatMoney } from '../../../util/currency';
+import { getDisplayedListingPrice, getSpaceLinqDisplayPrice } from '../../../util/spacelinqPricing';
+import { types as sdkTypes } from '../../../util/sdkLoader';
 
 import css from './ManageListingCard.module.css';
+
+const { Money } = sdkTypes;
 
 /**
  * Derives formatted price information for a listing.
@@ -47,7 +51,11 @@ const priceData = (price, marketplaceCurrency, intl) => {
 const PriceInfo = props => {
   const intl = useIntl();
   const config = useConfiguration();
-  const { price, publicData, isBookable, listingTypeConfig } = props;
+  const { price: listingPrice, publicData, isBookable, listingTypeConfig } = props;
+  // SpaceLinq: show what the provider entered (e.g. $180.00 per space / month), not the
+  // daily equivalent that bookable listings store as their listing price
+  const spaceLinqPrice = getSpaceLinqDisplayPrice(publicData);
+  const price = getDisplayedListingPrice({ price: listingPrice, publicData }, Money);
 
   const showPrice = displayPrice(listingTypeConfig);
   if (!showPrice) {
@@ -67,13 +75,15 @@ const PriceInfo = props => {
   const isPriceVariationsInUse = isPriceVariationsEnabled(publicData, listingTypeConfig);
   const hasMultiplePriceVariants = isPriceVariationsInUse && publicData?.priceVariants?.length > 1;
 
-  const perUnitString =
-    isBookable && publicData?.unitType
-      ? intl.formatMessage({ id: 'ManageListingCard.perUnit' }, { unitType: publicData.unitType })
-      : '';
+  const perUnitString = spaceLinqPrice
+    ? spaceLinqPrice.perUnit
+    : isBookable && publicData?.unitType
+    ? intl.formatMessage({ id: 'ManageListingCard.perUnit' }, { unitType: publicData.unitType })
+    : '';
 
   const priceValue = <span className={css.priceValue}>{formattedPrice}</span>;
-  const pricePerUnit = isBookable ? <span className={css.perUnit}>{perUnitString}</span> : '';
+  const pricePerUnit =
+    isBookable || spaceLinqPrice ? <span className={css.perUnit}>{perUnitString}</span> : '';
 
   return (
     <div className={css.price}>

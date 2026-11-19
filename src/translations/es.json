@@ -1766,5 +1766,19 @@
   "ManageListingCard.spaceLinqCertificateExpiring": "{label} certificate expires {days, plural, =0 {today} one {in # day} other {in # days}}. Update it under Edit listing.",
   "ManageListingCard.spaceLinqDuplicate": "Duplicate listing",
   "ManageListingsPage.spaceLinqDuplicateFailed": "The listing could not be duplicated. Please try again.",
-  "SpaceLinqAvailabilityForm.capacityHelp": "Several the same? List them once and enter how many you have. Each booking takes one or more of them, and the listing stops taking bookings for dates that are full."
+  "SpaceLinqAvailabilityForm.capacityHelp": "Several the same? List them once and enter how many you have. Each booking takes one or more of them, and the listing stops taking bookings for dates that are full.",
+  "SpaceLinqAdminCertificates.title": "Verify certificates",
+  "SpaceLinqAdminCertificates.loading": "Loading…",
+  "SpaceLinqAdminCertificates.notOperator": "This page is for SpaceLinq staff.",
+  "SpaceLinqAdminCertificates.failed": "The certificates could not be loaded. Please try again.",
+  "SpaceLinqAdminCertificates.actionFailed": "That change could not be saved. Please try again.",
+  "SpaceLinqAdminCertificates.notConfigured": "Set-up is not finished: the Sharetribe Integration API key has not been added to the server yet.",
+  "SpaceLinqAdminCertificates.help": "Check each certificate against the copy the provider uploaded: in {console}, open the listing and look under Protected files. Then verify it here. The badge drops by itself on the expiry date, or if the provider changes the number.",
+  "SpaceLinqAdminCertificates.none": "No listings have certificates yet.",
+  "SpaceLinqAdminCertificates.verified": "Verified",
+  "SpaceLinqAdminCertificates.toCheck": "To check",
+  "SpaceLinqAdminCertificates.expired": "Expired",
+  "SpaceLinqAdminCertificates.detail": "No. {number} · expires {expiry}{hasIssuer, select, yes { · issued by {issuer}} other {}}",
+  "SpaceLinqAdminCertificates.verify": "Verify",
+  "SpaceLinqAdminCertificates.unverify": "Remove verification"
 }
