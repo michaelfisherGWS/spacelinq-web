@@ -51,6 +51,14 @@ export const OrderBreakdownComponent = props => {
   // SpaceLinq: what one booked unit is called (pallet, m², space)
   const unitKind = unitKindProp || unitKindForListing(transaction?.listing?.attributes?.publicData);
 
+  // SpaceLinq: a booking of under a month that was charged the monthly price
+  const { start: bookingStart, end: bookingEnd } = booking?.attributes || {};
+  const bookedDays =
+    bookingStart && bookingEnd
+      ? (new Date(bookingEnd).getTime() - new Date(bookingStart).getTime()) / (24 * 60 * 60 * 1000)
+      : null;
+  const isShortStay = bookedDays != null && bookedDays < 28;
+
   const isCustomer = userRole === 'customer';
   const isProvider = userRole === 'provider';
   const allLineItems = transaction.attributes.lineItems || [];
@@ -122,6 +130,7 @@ export const OrderBreakdownComponent = props => {
         lineItems={lineItems}
         code={lineItemUnitType}
         unitKind={unitKind}
+        isShortStay={isShortStay}
         intl={intl}
       />
       <LineItemShippingFeeMaybe lineItems={lineItems} intl={intl} />

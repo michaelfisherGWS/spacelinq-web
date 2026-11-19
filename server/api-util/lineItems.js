@@ -310,6 +310,27 @@ const getSpaceLinqShortStayPrice = (listing, orderData, currency) => {
 };
 exports.getSpaceLinqShortStayPrice = getSpaceLinqShortStayPrice;
 
+/**
+ * SpaceLinq: what one month costs on a listing, in minor units.
+ * Monthly listings use their monthly price; weekly-priced listings use the
+ * weekly price spread over an average month.
+ *
+ * @param {Object} pricing listing publicData.pricing ({ rate, cycle })
+ * @returns {number|null}
+ */
+const getSpaceLinqMonthlyAmount = pricing => {
+  const rate = pricing?.rate;
+  if (!Number.isInteger(rate) || rate <= 0) {
+    return null;
+  }
+  return pricing.cycle === 'month'
+    ? rate
+    : pricing.cycle === 'week'
+    ? Math.round((rate / 7) * DAYS_PER_MONTH)
+    : null;
+};
+exports.getSpaceLinqMonthlyAmount = getSpaceLinqMonthlyAmount;
+
 // SpaceLinq: the marketplace fee on services (optional monthly services and
 // 3PL service charges). Storage uses the commission set in Sharetribe Console.
 // Set to 7 for testing so it is easy to tell apart from the 10% storage fee.
@@ -483,8 +504,22 @@ exports.transactionLineItems = (
     error.data = {};
     throw error;
   }
+  // SpaceLinq: a stay under a month never costs more than the monthly price.
+  // When the daily rate for the stay adds up to more, the monthly price is charged.
+  const stayDays = units || quantity;
+  const monthlyCap = shortStayPrice ? getSpaceLinqMonthlyAmount(publicData?.pricing) : null;
+  const isCappedAtMonth =
+    !!monthlyCap && Number.isFinite(stayDays) && shortStayPrice.amount * stayDays > monthlyCap;
   const order = flatMonthly
     ? flatMonthly.lineItem
+    : isCappedAtMonth
+    ? {
+        code: 'line-item/month',
+        unitPrice: new Money(monthlyCap, currency),
+        units: 1,
+        seats: Number.isInteger(seats) && seats > 0 ? seats : 1,
+        includeFor: ['customer', 'provider'],
+      }
     : {
         code,
         unitPrice: shortStayPrice || unitPrice,

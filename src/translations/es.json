@@ -801,7 +801,7 @@
   "OrderPanel.ownListing": "Este es tu propio anuncio.",
   "OrderPanel.perUnit": "{unitType, select, day {por día} night {por noche} hour {por hora} other {}}",
   "OrderPanel.price": "{priceValue} {pricePerUnit}",
-  "OrderPanel.spaceLinqShortStay": "Stays under a month: {price} {perUnit}",
+  "OrderPanel.spaceLinqShortStay": "Stays under a month: {price} {perUnit}, never more than the monthly price",
   "OrderPanel.priceInMobileCTA": "{priceValue}",
   "OrderPanel.subTitleClosedListing": "Lo sentimos, este anuncio ha sido cerrado.",
   "OrderPanel.unknownTransactionProcess": "Parece que los procesos del marketplace no están actualizados. Por favor, contacta a los administradores del marketplace.",
@@ -1578,7 +1578,7 @@
   "SpaceLinqPricingForm.stayType.monthly": "By the month, with shorter stays allowed",
   "SpaceLinqPricingForm.stayType.daily": "By the day only",
   "SpaceLinqPricingForm.dailyRate": "Daily rate for stays under a month (optional)",
-  "SpaceLinqPricingForm.dailyRateHelp": "Stays shorter than a month are charged this rate for each day. Leave it empty and short stays are charged the price above divided into days. Stays of a month or more always use the price above.",
+  "SpaceLinqPricingForm.dailyRateHelp": "Stays shorter than a month are charged this rate for each day, but never more than a month at the price above. Leave it empty and short stays are charged the price above divided into days. Stays of a month or more always use the price above.",
   "SpaceLinqPricingForm.perMonthFrom": "per month (from)",
   "SpaceLinqPricingForm.monthlyHint": "That's about {amount} per month.",
   "SpaceLinqPricingForm.indicativeMax": "Indicative price up to (optional)",
@@ -1706,6 +1706,8 @@
   "StripePaymentForm.spaceLinqInstantSubmit": "Book and pay {totalPrice}",
   "StripePaymentForm.spaceLinqInstantFinePrint": "Your booking is confirmed and your card is charged straight away.",
   "TransactionPage.ActivityFeed.spaceLinqInstantConfirmed": "The booking was confirmed instantly and paid.",
+  "OrderBreakdown.spaceLinqMonthCap": "{unitPrice} monthly price, lower than the daily rate for this stay",
+  "OrderBreakdown.spaceLinqMonthCapUnits": "{unitPrice} monthly price, lower than the daily rate for this stay × {seats, number} {unitKind, select, pallet {{seats, plural, one {pallet} other {pallets}}} sqm {m²} space {{seats, plural, one {space} other {spaces}}} other {{seats, plural, one {unit} other {units}}}}",
   "OrderBreakdown.spaceLinqMonth": "{unitPrice} × {quantity, plural, one {# month} other {# months}}",
   "OrderBreakdown.spaceLinqMonthUnits": "{unitPrice} × {quantity, plural, one {# month} other {# months}} × {seats, number} {unitKind, select, pallet {{seats, plural, one {pallet} other {pallets}}} sqm {m²} space {{seats, plural, one {space} other {spaces}}} other {{seats, plural, one {unit} other {units}}}}"
 }

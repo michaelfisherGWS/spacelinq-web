@@ -1144,3 +1144,98 @@ describe('SpaceLinq short-stay daily rate', () => {
     ).toThrow('booked by the day or hour');
   });
 });
+
+describe('SpaceLinq short stays never cost more than a month', () => {
+  const { Money } = types;
+  const momentTz = require('moment-timezone');
+  const timezone = 'Pacific/Auckland';
+  const at = s => momentTz.tz(s, timezone).toDate();
+  const listing = pricing => ({
+    attributes: {
+      price: new Money(592, 'NZD'),
+      availabilityPlan: { timezone },
+      publicData: { unitType: 'day', pricing },
+    },
+  });
+  // $180.00 a month, $15.00 a day: 12 days is exactly a month's price
+  const parking = { model: 'per-space', cycle: 'month', rate: 18000, dailyRate: 1500 };
+  const total = items => items[0].unitPrice.amount * (items[0].units || 1) * (items[0].seats || 1);
+
+  it('charges the daily rate while it comes to no more than the month', () => {
+    const tenDays = transactionLineItems(
+      listing(parking),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-03-15'), seats: 1 },
+      null,
+      null
+    );
+    expect([tenDays[0].code, tenDays[0].unitPrice.amount, tenDays[0].units]).toEqual([
+      'line-item/day',
+      1500,
+      10,
+    ]);
+    const twelveDays = transactionLineItems(
+      listing(parking),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-03-17'), seats: 1 },
+      null,
+      null
+    );
+    expect(twelveDays[0].code).toEqual('line-item/day');
+    expect(total(twelveDays)).toEqual(18000);
+  });
+
+  it('charges the monthly price once the daily rate would come to more', () => {
+    const twentyDays = transactionLineItems(
+      listing(parking),
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-03-25'), seats: 2 },
+      { percentage: 10 },
+      null
+    );
+    expect([
+      twentyDays[0].code,
+      twentyDays[0].unitPrice.amount,
+      twentyDays[0].units,
+      twentyDays[0].seats,
+    ]).toEqual(['line-item/month', 18000, 1, 2]);
+    // Commission is on what the customer pays: 2 spaces x $180.00
+    expect(
+      twentyDays.find(i => i.code === 'line-item/provider-commission').unitPrice.amount
+    ).toEqual(36000);
+  });
+
+  it('caps a weekly-priced listing at an average month of its weekly price', () => {
+    // $14.00 a pallet a week is $60.83 for an average month; $5.00 a day for short stays
+    const pallets = { model: 'per-pallet', cycle: 'week', rate: 1400, dailyRate: 500 };
+    const twentyDays = transactionLineItems(
+      {
+        ...listing(pallets),
+        attributes: { ...listing(pallets).attributes, price: new Money(200, 'NZD') },
+      },
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-03-25'), seats: 3 },
+      null,
+      null
+    );
+    expect([twentyDays[0].code, twentyDays[0].unitPrice.amount, twentyDays[0].seats]).toEqual([
+      'line-item/month',
+      6083,
+      3,
+    ]);
+  });
+
+  it('has no cap on a listing booked by the day only', () => {
+    const rooftop = { model: 'per-space', cycle: 'day', rate: 12000 };
+    const result = transactionLineItems(
+      {
+        ...listing(rooftop),
+        attributes: { ...listing(rooftop).attributes, price: new Money(12000, 'NZD') },
+      },
+      { bookingStart: at('2027-03-05'), bookingEnd: at('2027-03-25'), seats: 1 },
+      null,
+      null
+    );
+    expect([result[0].code, result[0].unitPrice.amount, result[0].units]).toEqual([
+      'line-item/day',
+      12000,
+      20,
+    ]);
+  });
+});

@@ -25,7 +25,7 @@ import css from './OrderBreakdown.module.css';
  * @returns {JSX.Element}
  */
 const LineItemBasePriceMaybe = props => {
-  const { lineItems, code, intl, unitKind = 'unit' } = props;
+  const { lineItems, code, intl, unitKind = 'unit', isShortStay = false } = props;
   const isDigitalItem = code === LINE_ITEM_FILE;
   const isNightly = code === LINE_ITEM_NIGHT;
   const isDaily = code === LINE_ITEM_DAY;
@@ -67,7 +67,12 @@ const LineItemBasePriceMaybe = props => {
   const message = isMonthly ? (
     <FormattedMessage
       id={
-        unitPurchase?.seats > 1
+        // A stay under a month charged the monthly price, because the daily rate came to more
+        isShortStay
+          ? unitPurchase?.seats > 1
+            ? 'OrderBreakdown.spaceLinqMonthCapUnits'
+            : 'OrderBreakdown.spaceLinqMonthCap'
+          : unitPurchase?.seats > 1
           ? 'OrderBreakdown.spaceLinqMonthUnits'
           : 'OrderBreakdown.spaceLinqMonth'
       }
