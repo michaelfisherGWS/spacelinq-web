@@ -48,6 +48,7 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
   const addOns = pricing.addOns || [];
   const rateCard = pricing.rateCard || [];
   const insurance = pricing.insurance || null;
+  const categoryModel = pricingModelFor(listingType, getSpaceCategory(publicData));
   return {
     instantBooking: pricing.instantBooking === true ? ['yes'] : [],
     noticeDays: pricing.noticeDays ? `${pricing.noticeDays}` : 'month',
@@ -61,7 +62,12 @@ export const getSpaceLinqPricingInitialValues = (publicData, currency) => {
       acc[`ratePrice_${r.key}`] = minorToMoney(r.price, currency);
       return acc;
     }, {}),
-    model: pricing.model || pricingModelFor(listingType, getSpaceCategory(publicData)),
+    // A self-storage listing saved as one whole space moves to per-unit pricing
+    // (one unit until the provider says they have more), so it can hold several.
+    model:
+      pricing.model === 'fixed-monthly' && categoryModel === 'per-unit'
+        ? categoryModel
+        : pricing.model || categoryModel,
     rate: minorToMoney(pricing.rate, currency),
     cycle: pricing.cycle === 'day' ? 'month' : pricing.cycle || 'month',
     stayType: pricing.cycle === 'day' ? 'daily' : 'monthly',
