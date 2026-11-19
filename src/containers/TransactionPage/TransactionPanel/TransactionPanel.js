@@ -13,6 +13,7 @@ import { stateDataShape } from '../TransactionPage.stateData';
 // These are internal components that make this file more readable.
 import BreakdownMaybe from './BreakdownMaybe';
 import SpaceLinqPaymentSchedule from '../SpaceLinqPaymentSchedule/SpaceLinqPaymentSchedule';
+import SpaceLinqBookingRecord from '../SpaceLinqBookingRecord/SpaceLinqBookingRecord';
 import DetailCardHeadingsMaybe from './DetailCardHeadingsMaybe';
 import DetailCardImage from './DetailCardImage';
 import DeliveryInfoMaybe from './DeliveryInfoMaybe';
@@ -278,6 +279,12 @@ export class TransactionPanelComponent extends Component {
                 />
               </div>
             ) : null}
+            <SpaceLinqBookingRecord
+              transactionId={this.props.transactionId}
+              protectedData={protectedData}
+              transitions={transitions}
+              transactionRole={transactionRole}
+            />
             {protectedData?.agreement && this.props.transactionId?.uuid ? (
               <SpaceLinqPaymentSchedule
                 agreementId={this.props.transactionId.uuid}

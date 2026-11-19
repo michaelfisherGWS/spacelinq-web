@@ -1,0 +1,62 @@
+@import '../../styles/customMediaQueries.css';
+
+.root {
+  margin-bottom: 32px;
+
+  @media (--viewportMedium) {
+    margin-bottom: 40px;
+  }
+}
+
+.heading {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--colorGrey100);
+}
+
+.label {
+  margin: 0;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.verified,
+.declared {
+  composes: marketplaceTinyFontStyles from global;
+  display: inline-block;
+  margin: 0 0 0 8px;
+  padding: 0 8px;
+  border-radius: 12px;
+  font-weight: var(--fontWeightSemiBold);
+  vertical-align: middle;
+}
+
+.verified {
+  color: var(--colorWhite);
+  background-color: var(--colorSuccess);
+}
+
+.declared {
+  color: var(--colorGrey700);
+  background-color: var(--colorGrey100);
+}
+
+.detail,
+.note {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 0;
+}
+
+.note {
+  margin-top: 12px;
+}

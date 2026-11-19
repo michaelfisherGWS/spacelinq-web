@@ -1,0 +1,38 @@
+@import '../../styles/customMediaQueries.css';
+
+.root {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 64px 24px;
+
+  @media (--viewportMedium) {
+    padding: 64px 24px 96px 24px;
+  }
+}
+
+.title {
+  margin: 0 0 8px 0;
+}
+
+.version {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 0 0 16px 0;
+}
+
+.draft {
+  composes: marketplaceSmallFontStyles from global;
+  padding: 12px 16px;
+  margin: 0 0 24px 0;
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorAttentionSubtle);
+}
+
+.intro,
+.body {
+  margin: 0 0 16px 0;
+}
+
+.sectionTitle {
+  margin: 24px 0 8px 0;
+}

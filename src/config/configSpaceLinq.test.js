@@ -159,3 +159,72 @@ describe('space booked by the hour', () => {
     expect(pricingModelFor(HOURLY_LISTING_TYPE, 'parking')).toBe('per-space');
   });
 });
+
+describe('certificates', () => {
+  const {
+    certificatesForSaving,
+    certificateStatus,
+    currentCertificates,
+  } = require('./configSpaceLinq');
+  const now = new Date('2026-11-19T00:00:00.000Z');
+  const lcc = {
+    type: 'location-compliance',
+    number: 'LCC-123',
+    expiry: '2027-03-01',
+    classes: ['class-3', 'class-8'],
+  };
+
+  it('tidies form rows and drops incomplete ones', () => {
+    expect(
+      certificatesForSaving([
+        { ...lcc, number: ' LCC-123 ', classes: ['class-8', 'class-3', 'nonsense'], name: 'x' },
+        {
+          type: 'other',
+          name: ' ISO 9001 ',
+          number: '9',
+          expiry: '2027-01-01',
+          classes: ['class-3'],
+        },
+        { type: 'security', number: '', expiry: '2027-01-01' },
+        { type: 'security', number: '1', expiry: 'soon' },
+        { type: 'made-up', number: '1', expiry: '2027-01-01' },
+      ])
+    ).toEqual([lcc, { type: 'other', name: 'ISO 9001', number: '9', expiry: '2027-01-01' }]);
+    expect(certificatesForSaving(undefined)).toEqual([]);
+  });
+
+  it('is declared until SpaceLinq has verified the same type and number', () => {
+    expect(certificateStatus(lcc, undefined, now)).toEqual('declared');
+    expect(certificateStatus(lcc, [{ type: 'security', number: 'LCC-123' }], now)).toEqual(
+      'declared'
+    );
+    expect(
+      certificateStatus(lcc, [{ type: 'location-compliance', number: 'lcc-123' }], now)
+    ).toEqual('verified');
+  });
+
+  it('drops the verified badge when the checked expiry passes, and expires on its date', () => {
+    const verified = [{ type: 'location-compliance', number: 'LCC-123', expiry: '2026-11-18' }];
+    expect(certificateStatus(lcc, verified, now)).toEqual('declared');
+    expect(certificateStatus({ ...lcc, expiry: '2026-11-18' }, [], now)).toEqual('expired');
+    expect(certificateStatus({ ...lcc, expiry: '2026-11-19' }, [], now)).toEqual('declared');
+  });
+
+  it('lists current certificates with verified ones first', () => {
+    const publicData = {
+      certificates: [
+        { type: 'security', number: 'S1', expiry: '2027-01-01' },
+        { type: 'food-registration', number: 'F1', expiry: '2020-01-01' },
+        lcc,
+      ],
+    };
+    const metadata = { verifiedCertificates: [{ type: 'location-compliance', number: 'LCC-123' }] };
+    const result = currentCertificates(publicData, metadata, now);
+    expect(result.map(c => [c.type, c.status])).toEqual([
+      ['location-compliance', 'verified'],
+      ['security', 'declared'],
+    ]);
+    expect(result[0].classLabels).toEqual(['Class 3 (flammable liquids)', 'Class 8 (corrosive)']);
+    expect(currentCertificates({}, {}, now)).toEqual([]);
+  });
+});

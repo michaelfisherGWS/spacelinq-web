@@ -182,3 +182,11 @@ export const createUserWithIdp = body => {
 export const deleteUserAccount = body => {
   return post('/api/delete-account', body);
 };
+
+// SpaceLinq: the business customer's company name on a booking. The server
+// only gives it out once the booking is confirmed.
+//
+// See `server/api/spacelinq-customer-company.js`.
+export const spaceLinqCustomerCompany = body => {
+  return post('/api/spacelinq/customer-company', body);
+};

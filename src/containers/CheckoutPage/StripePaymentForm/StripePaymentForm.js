@@ -883,6 +883,31 @@ class StripePaymentForm extends Component {
             />
           </div>
         ) : null}
+        {/* SpaceLinq: the customer accepts the storage agreement with the booking */}
+        <div className={css.storageAgreement}>
+          <FieldCheckbox
+            id={`${formId}-storageAgreement`}
+            name="storageAgreementAccepted"
+            value="accepted"
+            validate={value =>
+              Array.isArray(value) && value.includes('accepted')
+                ? undefined
+                : intl.formatMessage({ id: 'StripePaymentForm.spaceLinqAgreementRequired' })
+            }
+            label={
+              <FormattedMessage
+                id="StripePaymentForm.spaceLinqAgreement"
+                values={{
+                  link: (
+                    <a href="/storage-agreement" target="_blank" rel="noopener noreferrer">
+                      <FormattedMessage id="StripePaymentForm.spaceLinqAgreementLink" />
+                    </a>
+                  ),
+                }}
+              />
+            }
+          />
+        </div>
         <div className={css.submitContainer}>
           {hasPaymentErrors ? (
             <span className={css.errorMessage}>{paymentErrorMessage}</span>

@@ -11,6 +11,7 @@ const {
   throwErrorIfNegotiationOfferHasInvalidHistory,
 } = require('../api-util/negotiation');
 const { sanitizePushPaymentBodyParams } = require('../api-util/pushPaymentMethodValidation');
+const { isBookingRequest, withOrderRecord } = require('../api-util/spaceLinqOrderRecord');
 const {
   createCookieTokenStore,
   getSdk,
@@ -147,10 +148,23 @@ module.exports = (req, res) => {
   let metadataMaybe = {};
   // SpaceLinq: validated service charges, when a provider updates a monthly instalment
   let spaceLinqCharges = null;
+  let customer = null;
 
-  Promise.all([transactionPromise(sdk, bodyParams?.id), fetchCommission(sdk)])
+  // SpaceLinq: a booking request made from an enquiry is recorded like any other
+  // (see initiate-privileged.js).
+  const isRecordedRequest = !isSpeculative && isBookingRequest(transitionName);
+  if (isRecordedRequest && bodyParams?.params?.protectedData?.storageAgreementAccepted !== true) {
+    return res
+      .status(400)
+      .json({ error: 'The storage agreement must be accepted before booking.' })
+      .end();
+  }
+  const customerPromise = isRecordedRequest ? sdk.currentUser.show() : Promise.resolve(null);
+
+  Promise.all([transactionPromise(sdk, bodyParams?.id), fetchCommission(sdk), customerPromise])
     .then(responses => {
-      const [showTransactionResponse, fetchAssetsResponse] = responses;
+      const [showTransactionResponse, fetchAssetsResponse, customerResponse] = responses;
+      customer = customerResponse?.data?.data || null;
       const transaction = showTransactionResponse.data.data;
       const listing = getListingRelationShip(showTransactionResponse.data);
       const commissionAsset = fetchAssetsResponse.data.data[0];
@@ -231,6 +245,16 @@ module.exports = (req, res) => {
               serviceCharges: spaceLinqCharges.serviceCharges,
               otherCharge: spaceLinqCharges.otherCharge,
             },
+          }
+        : isBookingRequest(transitionName)
+        ? {
+            ...requestParams,
+            protectedData: isRecordedRequest
+              ? withOrderRecord(requestParams.protectedData, customer)
+              : withOrderRecord(
+                  { ...requestParams.protectedData, storageAgreementAccepted: false },
+                  null
+                ),
           }
         : requestParams;
 

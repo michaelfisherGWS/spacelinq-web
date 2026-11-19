@@ -53,6 +53,7 @@ import SectionReviews from './SectionReviews';
 import SectionAuthorMaybe from './SectionAuthorMaybe';
 import SectionMapMaybe from './SectionMapMaybe';
 import SectionStorageUnitMaybe from './SectionStorageUnitMaybe';
+import SectionCertificatesMaybe from './SectionCertificatesMaybe';
 import SectionServiceRatesMaybe from './SectionServiceRatesMaybe';
 import SectionGallery from './SectionGallery';
 import CustomListingFields from './CustomListingFields';
@@ -278,6 +279,10 @@ export const ListingPageComponent = props => {
             {showDescription && <SectionText text={description} showAsIngress />}
 
             <SectionStorageUnitMaybe publicData={publicData} />
+            <SectionCertificatesMaybe
+              publicData={publicData}
+              metadata={currentListing.attributes.metadata}
+            />
             <SectionServiceRatesMaybe publicData={publicData} />
 
             <CustomListingFields

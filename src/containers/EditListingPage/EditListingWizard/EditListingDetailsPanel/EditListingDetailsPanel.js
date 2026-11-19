@@ -19,6 +19,7 @@ import {
 import { isBookingProcessAlias } from '../../../../transactions/transaction';
 import {
   SPACE_CATEGORY_FIELD_KEY,
+  certificatesForSaving,
   getSpaceCategory,
   isFieldForSpaceListing,
   isSpaceLinqListingType,
@@ -242,6 +243,8 @@ const setNoAvailabilityForUnbookableListings = processAlias => {
  * @param {object} listingFields those extended data fields that are part of configurations
  * @returns initialValues object for the form
  */
+const NO_CERTIFICATES = [];
+
 const getInitialValues = (
   props,
   existingListingTypeInfo,
@@ -279,6 +282,10 @@ const getInitialValues = (
       listingFields
     ),
     ...spaceCategoryMaybe,
+    // SpaceLinq: certificates and registrations held for the space
+    certificates: Array.isArray(publicData?.certificates)
+      ? publicData.certificates
+      : NO_CERTIFICATES,
     ...initialValuesForListingFields(
       privateData,
       'private',
@@ -443,6 +450,9 @@ const EditListingDetailsPanel = props => {
                 unitType,
                 ...cleanedNestedCategories,
                 ...publicListingFields,
+                ...(isSpaceLinqListingType(listingType)
+                  ? { certificates: certificatesForSaving(rest.certificates) }
+                  : {}),
               },
               privateData: privateListingFields,
               ...setNoAvailabilityForUnbookableListings(transactionProcessAlias),
@@ -466,6 +476,7 @@ const EditListingDetailsPanel = props => {
           onListingTypeChange={onListingTypeChange}
           listingFieldsConfig={listingFields}
           listingCurrency={listing?.attributes?.price?.currency}
+          verifiedCertificates={listing?.attributes?.metadata?.verifiedCertificates}
           marketplaceCurrency={config.currency}
           marketplaceName={config.marketplaceName}
           disabled={disabled}

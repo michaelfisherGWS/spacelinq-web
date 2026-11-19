@@ -11,6 +11,7 @@ const {
   fetchCommission,
 } = require('../api-util/sdk');
 const { sanitizePushPaymentBodyParams } = require('../api-util/pushPaymentMethodValidation');
+const { isBookingRequest, withOrderRecord } = require('../api-util/spaceLinqOrderRecord');
 
 const { Money } = sharetribeSdk.types;
 
@@ -66,10 +67,27 @@ module.exports = (req, res) => {
   const sdk = getSdk(req, res, tokenStore);
   let lineItems = null;
   let metadataMaybe = {};
+  let customer = null;
 
-  Promise.all([listingPromise(sdk, bodyParams?.params?.listingId), fetchCommission(sdk)])
-    .then(([showListingResponse, fetchAssetsResponse]) => {
+  // SpaceLinq: a real booking request records the storage agreement the customer
+  // accepted and, for a business, the company name (sealed until confirmed).
+  const isRecordedRequest = !isSpeculative && isBookingRequest(transitionName);
+  if (isRecordedRequest && bodyParams?.params?.protectedData?.storageAgreementAccepted !== true) {
+    return res
+      .status(400)
+      .json({ error: 'The storage agreement must be accepted before booking.' })
+      .end();
+  }
+  const customerPromise = isRecordedRequest ? sdk.currentUser.show() : Promise.resolve(null);
+
+  Promise.all([
+    listingPromise(sdk, bodyParams?.params?.listingId),
+    fetchCommission(sdk),
+    customerPromise,
+  ])
+    .then(([showListingResponse, fetchAssetsResponse, customerResponse]) => {
       const listing = showListingResponse.data.data;
+      customer = customerResponse?.data?.data || null;
       const commissionAsset = fetchAssetsResponse.data.data[0];
 
       // SpaceLinq: months that are accepted straight away may only be scheduled
@@ -105,12 +123,23 @@ module.exports = (req, res) => {
     })
     .then(trustedSdk => {
       const { params } = bodyParams;
+      const protectedDataMaybe = isBookingRequest(transitionName)
+        ? {
+            protectedData: isRecordedRequest
+              ? withOrderRecord(params?.protectedData, customer)
+              : withOrderRecord(
+                  { ...params?.protectedData, storageAgreementAccepted: false },
+                  null
+                ),
+          }
+        : {};
 
       // Add lineItems to the body params
       const body = {
         ...bodyParams,
         params: {
           ...params,
+          ...protectedDataMaybe,
           lineItems,
           ...metadataMaybe,
         },

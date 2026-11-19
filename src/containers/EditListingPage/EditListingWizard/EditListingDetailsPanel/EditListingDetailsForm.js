@@ -34,6 +34,7 @@ import {
   CustomExtendedDataField,
 } from '../../../../components';
 // Import modules from this directory
+import SpaceLinqCertificatesFields from './SpaceLinqCertificatesFields';
 import css from './EditListingDetailsForm.module.css';
 
 const TITLE_MAX_LENGTH = 60;
@@ -454,6 +455,7 @@ const EditListingDetailsForm = props => (
         fetchErrors,
         listingFieldsConfig = [],
         listingCurrency,
+        verifiedCertificates,
         values,
       } = formRenderProps;
 
@@ -612,6 +614,14 @@ const EditListingDetailsForm = props => (
               intl={intl}
             />
           )}
+
+          {showListingFields && isCompatibleCurrency && isSpaceLinqListingType(listingType) ? (
+            <SpaceLinqCertificatesFields
+              formId={formId}
+              form={formApi}
+              verified={verifiedCertificates}
+            />
+          ) : null}
 
           {!isCompatibleCurrency && listingType && (
             <p className={css.error}>

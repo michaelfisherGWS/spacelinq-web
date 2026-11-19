@@ -342,8 +342,13 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
   } = values;
   const { saveAfterOnetimePayment: saveAfterOnetimePaymentRaw } = formValues;
 
+  // SpaceLinq: the server records the accepted storage agreement (version, time, name)
+  const hasAcceptedStorageAgreement = (formValues.storageAgreementAccepted || []).includes(
+    'accepted'
+  );
   const transactionFieldsProtectedData = {
     ...pickTransactionFieldsData(formValues, 'protected', true, transactionFieldConfigs),
+    ...(hasAcceptedStorageAgreement ? { storageAgreementAccepted: true } : {}),
   };
 
   // SpaceLinq: an ongoing booking charges later months to the saved card, so the card is always saved.

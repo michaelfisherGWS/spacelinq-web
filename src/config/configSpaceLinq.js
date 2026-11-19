@@ -853,3 +853,222 @@ export const isSpaceLinqUserFieldShown = (fieldConfig, values) =>
   !fieldConfig?.businessOnly ||
   !values ||
   values[`prot_${ACCOUNT_TYPE_FIELD_KEY}`] === ACCOUNT_TYPE_BUSINESS;
+
+/////////////////////////////////////////
+// Storage agreement between the parties //
+/////////////////////////////////////////
+
+// Keep in step with STORAGE_AGREEMENT_VERSION in server/api-util/spaceLinqOrderRecord.js
+export const STORAGE_AGREEMENT_VERSION = '2026-11-draft';
+
+/**
+ * The standard agreement between a customer and a provider. The customer accepts
+ * it at checkout; the provider accepts it by accepting the booking (or by offering
+ * instant booking). SpaceLinq keeps the record on the booking and is not a party.
+ *
+ * DRAFT: this wording has not had legal review.
+ */
+export const storageAgreement = {
+  version: STORAGE_AGREEMENT_VERSION,
+  isDraft: true,
+  title: 'SpaceLinq storage agreement',
+  intro:
+    'This agreement is between the customer who books a space and the provider who offers it. SpaceLinq runs the marketplace and keeps the record of the booking; it is not a party to this agreement.',
+  sections: [
+    {
+      title: '1. The booking',
+      body:
+        'The space, dates, price and any extra services are those shown on the booking. The booking page on SpaceLinq is the record of what was agreed.',
+    },
+    {
+      title: '2. How it is accepted',
+      body:
+        'The customer accepts this agreement when they confirm the booking. The provider accepts it when they accept the booking request, or by offering instant booking on the listing. SpaceLinq records who accepted, when, and which version.',
+    },
+    {
+      title: '3. Payment',
+      body:
+        'The customer pays through SpaceLinq at the price shown. For an ongoing booking, each later month is charged to the saved payment method before that month starts. Extra services the provider carries out are charged at the rates shown on the listing.',
+    },
+    {
+      title: '4. What may be stored',
+      body:
+        'The customer must describe their goods honestly and store only goods that are lawful and that the listing accepts. Hazardous substances may be stored only where the listing shows a current certificate for that class and the provider has agreed in writing on SpaceLinq.',
+    },
+    {
+      title: '5. Care of the goods',
+      body:
+        'The provider will take reasonable care of the space and the goods in it, keep the space as described on the listing, and tell the customer promptly about any loss, damage or incident.',
+    },
+    {
+      title: '6. Insurance and risk',
+      body:
+        'Unless goods insurance is shown on the booking, the customer is responsible for insuring their own goods. Each party is responsible for loss it causes by not doing what this agreement requires.',
+    },
+    {
+      title: '7. Access',
+      body:
+        'The customer may access the space at the times shown on the listing, or as arranged with the provider through SpaceLinq messages.',
+    },
+    {
+      title: '8. Unpaid charges',
+      body:
+        'If charges under this booking are overdue, the provider may hold the goods until they are paid. The provider must give the customer written notice through SpaceLinq before taking any further step.',
+    },
+    {
+      title: '9. Ending the booking',
+      body:
+        'A booking for fixed dates ends on its last day. An ongoing booking ends when either party gives the notice shown on the listing. The customer must remove their goods by the end date and leave the space as they found it.',
+    },
+    {
+      title: '10. Problems',
+      body:
+        'The parties will first try to sort out any problem through SpaceLinq messages. Either party may ask SpaceLinq to look at the booking record. New Zealand law applies.',
+    },
+  ],
+};
+
+///////////////////////////////////////
+// Certificates and registrations     //
+///////////////////////////////////////
+
+export const MAX_CERTIFICATES = 5;
+export const LOCATION_COMPLIANCE_CERTIFICATE = 'location-compliance';
+
+// Hazardous substance classes that a location compliance certificate can cover
+export const hazardClasses = [
+  { key: 'class-2', label: 'Class 2 (gases)' },
+  { key: 'class-3', label: 'Class 3 (flammable liquids)' },
+  { key: 'class-4', label: 'Class 4 (flammable solids)' },
+  { key: 'class-5', label: 'Class 5 (oxidising)' },
+  { key: 'class-6', label: 'Class 6 (toxic)' },
+  { key: 'class-8', label: 'Class 8 (corrosive)' },
+];
+
+export const certificateTypes = [
+  {
+    key: LOCATION_COMPLIANCE_CERTIFICATE,
+    label: 'Hazardous substances location compliance certificate',
+    shortLabel: 'Dangerous goods facility',
+    hasClasses: true,
+  },
+  {
+    key: 'transitional-facility',
+    label: 'MPI approved transitional facility',
+    shortLabel: 'MPI transitional facility',
+  },
+  {
+    key: 'customs-controlled-area',
+    label: 'Customs controlled area',
+    shortLabel: 'Customs controlled area',
+  },
+  {
+    key: 'food-registration',
+    label: 'Food Act registration',
+    shortLabel: 'Food Act registered',
+  },
+  {
+    key: 'security',
+    label: 'Security certification or monitored alarm',
+    shortLabel: 'Security certified',
+  },
+  {
+    key: 'other',
+    label: 'Other certificate or registration',
+    shortLabel: 'Certificate',
+    custom: true,
+  },
+];
+
+export const getCertificateType = key => certificateTypes.find(t => t.key === key) || null;
+
+export const CERTIFICATE_VERIFIED = 'verified';
+export const CERTIFICATE_DECLARED = 'declared';
+export const CERTIFICATE_EXPIRED = 'expired';
+
+const cleanText = value => (typeof value === 'string' ? value.trim() : '');
+const isIsoDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
+const sameCertificate = (a, b) =>
+  a.type === b.type && cleanText(a.number).toLowerCase() === cleanText(b.number).toLowerCase();
+
+/**
+ * Tidy the certificates entered on the listing form for saving.
+ * Rows without a type, number or expiry date are dropped.
+ *
+ * @param {Array<Object>} certificates - form rows
+ * @returns {Array<Object>} [{ type, name?, number, issuer?, expiry, classes? }]
+ */
+export const certificatesForSaving = certificates =>
+  (Array.isArray(certificates) ? certificates : [])
+    .map(row => {
+      const type = getCertificateType(row?.type);
+      const number = cleanText(row?.number);
+      if (!type || !number || !isIsoDate(row?.expiry)) {
+        return null;
+      }
+      const name = cleanText(row.name).slice(0, 60);
+      const issuer = cleanText(row.issuer).slice(0, 80);
+      const classes = hazardClasses.map(c => c.key).filter(k => (row.classes || []).includes(k));
+      return {
+        type: type.key,
+        ...(type.custom && name ? { name } : {}),
+        number: number.slice(0, 60),
+        ...(issuer ? { issuer } : {}),
+        expiry: row.expiry,
+        ...(type.hasClasses && classes.length ? { classes } : {}),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, MAX_CERTIFICATES);
+
+/**
+ * Where a certificate stands today.
+ * - expired: its expiry date has passed
+ * - verified: SpaceLinq has checked it (listing metadata `verifiedCertificates`
+ *   holds the same type and number, with an expiry that has not passed)
+ * - declared: stated by the provider, not checked
+ *
+ * @param {Object} certificate - from listing publicData.certificates
+ * @param {Array<Object>} [verified] - listing metadata.verifiedCertificates
+ * @param {Date} [now]
+ * @returns {'verified'|'declared'|'expired'}
+ */
+export const certificateStatus = (certificate, verified, now = new Date()) => {
+  const today = now.toISOString().slice(0, 10);
+  if (!isIsoDate(certificate?.expiry) || certificate.expiry < today) {
+    return CERTIFICATE_EXPIRED;
+  }
+  const match = (Array.isArray(verified) ? verified : []).find(
+    v => v && sameCertificate(v, certificate)
+  );
+  const isVerified = !!match && (!isIsoDate(match.expiry) || match.expiry >= today);
+  return isVerified ? CERTIFICATE_VERIFIED : CERTIFICATE_DECLARED;
+};
+
+/**
+ * Certificates to show on a listing: current ones only, verified first.
+ *
+ * @param {Object} publicData - listing public data
+ * @param {Object} [metadata] - listing metadata
+ * @param {Date} [now]
+ * @returns {Array<Object>} [{ ...certificate, status, label, classLabels }]
+ */
+export const currentCertificates = (publicData, metadata, now = new Date()) =>
+  (Array.isArray(publicData?.certificates) ? publicData.certificates : [])
+    .map(certificate => {
+      const type = getCertificateType(certificate?.type);
+      if (!type) {
+        return null;
+      }
+      return {
+        ...certificate,
+        status: certificateStatus(certificate, metadata?.verifiedCertificates, now),
+        label: type.custom && certificate.name ? certificate.name : type.label,
+        shortLabel: type.custom && certificate.name ? certificate.name : type.shortLabel,
+        classLabels: hazardClasses
+          .filter(c => (certificate.classes || []).includes(c.key))
+          .map(c => c.label),
+      };
+    })
+    .filter(c => c && c.status !== CERTIFICATE_EXPIRED)
+    .sort((a, b) => (a.status === b.status ? 0 : a.status === CERTIFICATE_VERIFIED ? -1 : 1));

@@ -20,6 +20,7 @@ const spaceLinqGiveNotice = require('./api/spacelinq-give-notice');
 const spaceLinqExtend = require('./api/spacelinq-extend');
 const spaceLinqConfirmInstant = require('./api/spacelinq-confirm-instant');
 const spaceLinqSchedule = require('./api/spacelinq-schedule');
+const spaceLinqCustomerCompany = require('./api/spacelinq-customer-company');
 
 const createUserWithIdp = require('./api/auth/createUserWithIdp');
 
@@ -64,6 +65,7 @@ router.post('/spacelinq/give-notice', spaceLinqGiveNotice);
 router.post('/spacelinq/extend', spaceLinqExtend);
 router.post('/spacelinq/confirm-instant', spaceLinqConfirmInstant);
 router.post('/spacelinq/schedule', spaceLinqSchedule);
+router.post('/spacelinq/customer-company', spaceLinqCustomerCompany);
 
 // Create user with identity provider (e.g. Facebook or Google)
 // This endpoint is called to create a new user after user has confirmed

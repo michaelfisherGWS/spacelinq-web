@@ -36,6 +36,7 @@ const RequestQuotePage = loadable(() => import(/* webpackChunkName: "RequestQuot
 const SearchPageWithMap = loadable(() => import(/* webpackChunkName: "SearchPageWithMap" */ /* webpackPrefetch: true */  '../containers/SearchPage/SearchPageWithMap'));
 const SearchPageWithGrid = loadable(() => import(/* webpackChunkName: "SearchPageWithGrid" */ /* webpackPrefetch: true */  '../containers/SearchPage/SearchPageWithGrid'));
 const StripePayoutPage = loadable(() => import(/* webpackChunkName: "StripePayoutPage" */ '../containers/StripePayoutPage/StripePayoutPage'));
+const StorageAgreementPage = loadable(() => import(/* webpackChunkName: "StorageAgreementPage" */ '../containers/StorageAgreementPage/StorageAgreementPage'));
 const TermsOfServicePage = loadable(() => import(/* webpackChunkName: "TermsOfServicePage" */ '../containers/TermsOfServicePage/TermsOfServicePage'));
 const TransactionPage = loadable(() => import(/* webpackChunkName: "TransactionPage" */ '../containers/TransactionPage/TransactionPage'));
 const NoAccessPage = loadable(() => import(/* webpackChunkName: "NoAccessPage" */ '../containers/NoAccessPage/NoAccessPage'));
@@ -402,6 +403,11 @@ const routeConfiguration = (layoutConfig, accessControlConfig) => {
       name: 'TermsOfServicePage',
       component: TermsOfServicePage,
       loadData: pageDataLoadingAPI.TermsOfServicePage.loadData,
+    },
+    {
+      path: '/storage-agreement',
+      name: 'StorageAgreementPage',
+      component: StorageAgreementPage,
     },
     {
       path: '/privacy-policy',

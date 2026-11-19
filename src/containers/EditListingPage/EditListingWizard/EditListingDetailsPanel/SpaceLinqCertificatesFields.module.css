@@ -1,0 +1,84 @@
+@import '../../../../styles/customMediaQueries.css';
+
+.root {
+  margin: 0 0 32px 0;
+}
+
+.heading {
+  margin: 0 0 4px 0;
+}
+
+.help {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 0 0 16px 0;
+}
+
+.certificate {
+  border: 1px solid var(--colorGrey100);
+  border-radius: var(--borderRadiusMedium);
+  padding: 16px;
+  margin: 0 0 16px 0;
+}
+
+.certificateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.certificateTitle {
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.verified,
+.declared,
+.expired {
+  composes: marketplaceTinyFontStyles from global;
+  display: inline-block;
+  margin: 0 0 0 8px;
+  padding: 0 8px;
+  border-radius: 12px;
+  font-weight: var(--fontWeightSemiBold);
+}
+
+.verified {
+  color: var(--colorWhite);
+  background-color: var(--colorSuccess);
+}
+
+.declared {
+  color: var(--colorGrey700);
+  background-color: var(--colorGrey100);
+}
+
+.expired {
+  color: var(--colorWhite);
+  background-color: var(--colorFail);
+}
+
+.field {
+  margin: 0 0 16px 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 16px;
+
+  @media (--viewportMedium) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.incomplete {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorAttention);
+  margin: 0;
+}
+
+.remove,
+.add {
+  composes: marketplaceSmallFontStyles from global;
+}
