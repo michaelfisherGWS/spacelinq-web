@@ -6,6 +6,7 @@ import { parse } from '../../util/urlHelpers';
 import { getReferralParams } from '../../util/webStorageHelpers';
 
 import { fetchCurrentUser } from '../../ducks/user.duck';
+import { duplicateListingParams } from '../../config/configSpaceLinq';
 
 // Pagination page size might need to be dynamic on responsive page layouts
 // Current design has max 3 columns 42 is divisible by 2 and 3
@@ -57,6 +58,27 @@ export const queryOwnListingsThunk = createAsyncThunk(
 // Backward compatible wrapper for the thunk
 export const queryOwnListings = queryParams => (dispatch, getState, sdk) => {
   return dispatch(queryOwnListingsThunk(queryParams)).unwrap();
+};
+
+///////////////////////
+// Duplicate Listing //
+///////////////////////
+// SpaceLinq: copy a listing into a new draft, for providers with several similar spaces
+const duplicateListingPayloadCreator = (listing, { extra: sdk, rejectWithValue }) => {
+  return sdk.ownListings
+    .createDraft(duplicateListingParams(listing), { expand: true })
+    .then(response => response.data.data)
+    .catch(e => {
+      return rejectWithValue(storableError(e));
+    });
+};
+
+export const duplicateListingThunk = createAsyncThunk(
+  'app/ManageListingsPage/duplicateListing',
+  duplicateListingPayloadCreator
+);
+export const duplicateListing = listing => dispatch => {
+  return dispatch(duplicateListingThunk(listing)).unwrap();
 };
 
 ///////////////////
@@ -166,6 +188,8 @@ const manageListingsPageSlice = createSlice({
     openingListingError: null,
     closingListing: null,
     closingListingError: null,
+    duplicatingListing: null,
+    duplicateListingError: null,
     discardingDraft: null,
     discardingDraftError: null,
   },
@@ -221,6 +245,24 @@ const manageListingsPageSlice = createSlice({
           error: action.payload,
         };
         state.openingListing = null;
+      });
+
+    // Duplicate listing
+    builder
+      .addCase(duplicateListingThunk.pending, (state, action) => {
+        state.duplicatingListing = action.meta.arg?.id || null;
+        state.duplicateListingError = null;
+      })
+      .addCase(duplicateListingThunk.fulfilled, state => {
+        state.duplicatingListing = null;
+      })
+      .addCase(duplicateListingThunk.rejected, (state, action) => {
+        console.error(action.payload || action.error);
+        state.duplicateListingError = {
+          listingId: state.duplicatingListing,
+          error: action.payload,
+        };
+        state.duplicatingListing = null;
       });
 
     // Close listing

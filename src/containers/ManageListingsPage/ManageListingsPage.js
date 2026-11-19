@@ -6,9 +6,13 @@ import { connect } from 'react-redux';
 import { useRouteConfiguration } from '../../context/routeConfigurationContext';
 import { useConfiguration } from '../../context/configurationContext';
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
-import { pathByRouteName } from '../../util/routes';
+import { createResourceLocatorString, pathByRouteName } from '../../util/routes';
 import { hasPermissionToPostListings, showCreateListingLinkForUser } from '../../util/userHelpers';
-import { NO_ACCESS_PAGE_POST_LISTINGS } from '../../util/urlHelpers';
+import {
+  LISTING_PAGE_PARAM_TYPE_DRAFT,
+  NO_ACCESS_PAGE_POST_LISTINGS,
+  createSlug,
+} from '../../util/urlHelpers';
 import { propTypes } from '../../util/types';
 import { isErrorNoPermissionToPostListings } from '../../util/errors';
 import { isScrollingDisabled, manageDisableScrolling } from '../../ducks/ui.duck';
@@ -30,6 +34,7 @@ import ManageListingCard from './ManageListingCard/ManageListingCard';
 
 import {
   closeListing,
+  duplicateListing,
   openListing,
   getOwnListingsById,
   discardDraft,
@@ -115,6 +120,8 @@ export const ManageListingsPageComponent = props => {
     currentUser,
     closingListing,
     closingListingError,
+    duplicatingListing,
+    onDuplicateListing,
     discardingDraft,
     discardingDraftError,
     listings = [],
@@ -130,6 +137,29 @@ export const ManageListingsPageComponent = props => {
     scrollingDisabled,
     onManageDisableScrolling,
   } = props;
+
+  // SpaceLinq: copy a listing into a new draft and open it for editing
+  const [duplicateFailed, setDuplicateFailed] = useState(false);
+  const handleDuplicateListing = listing => {
+    setDuplicateFailed(false);
+    return onDuplicateListing(listing)
+      .then(draft => {
+        history.push(
+          createResourceLocatorString(
+            'EditListingPage',
+            routeConfiguration,
+            {
+              id: draft.id.uuid,
+              slug: createSlug(draft.attributes.title),
+              type: LISTING_PAGE_PARAM_TYPE_DRAFT,
+              tab: 'details',
+            },
+            {}
+          )
+        );
+      })
+      .catch(() => setDuplicateFailed(true));
+  };
 
   useEffect(() => {
     if (isErrorNoPermissionToPostListings(openingListingError?.error)) {
@@ -221,6 +251,12 @@ export const ManageListingsPageComponent = props => {
         {queryInProgress ? loadingResults : null}
         {queryListingsError ? queryError : null}
 
+        {duplicateFailed ? (
+          <p className={css.error}>
+            <FormattedMessage id="ManageListingsPage.spaceLinqDuplicateFailed" />
+          </p>
+        ) : null}
+
         <div className={css.listingPanel}>
           <Heading listingsAreLoaded={listingsAreLoaded} pagination={pagination} />
 
@@ -230,7 +266,10 @@ export const ManageListingsPageComponent = props => {
                 <ManageListingCard
                   listing={l}
                   isMenuOpen={!!listingMenuOpen && listingMenuOpen.id.uuid === l.id.uuid}
-                  actionsInProgressListingId={openingListing || closingListing || discardingDraft}
+                  actionsInProgressListingId={
+                    openingListing || closingListing || discardingDraft || duplicatingListing
+                  }
+                  onDuplicateListing={handleDuplicateListing}
                   onToggleMenu={onToggleMenu}
                   onCloseListing={onCloseListing}
                   onOpenListing={handleOpenListing}
@@ -279,6 +318,7 @@ const mapStateToProps = state => {
     openingListingError,
     closingListing,
     closingListingError,
+    duplicatingListing,
     discardingDraft,
     discardingDraftError,
   } = state.ManageListingsPage;
@@ -296,6 +336,7 @@ const mapStateToProps = state => {
     openingListingError,
     closingListing,
     closingListingError,
+    duplicatingListing,
     discardingDraft,
     discardingDraftError,
   };
@@ -303,6 +344,7 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => ({
   onCloseListing: listingId => dispatch(closeListing(listingId)),
+  onDuplicateListing: listing => dispatch(duplicateListing(listing)),
   onOpenListing: listingId => dispatch(openListing(listingId)),
   onDiscardDraft: listingId => dispatch(discardDraft(listingId)),
   onManageDisableScrolling: (componentId, disableScrolling) =>

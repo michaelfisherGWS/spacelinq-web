@@ -52,7 +52,7 @@ export const spaceCategories = [
     label: 'Self-storage and household storage',
     description: 'Lock-ups, garages, sheds and spare rooms for household or small business goods.',
     listingTypes: ['dedicated-space'],
-    pricingModel: 'fixed-monthly',
+    pricingModel: 'per-unit',
     dailyOnly: false,
     services: false,
     goodsInsurance: true,
@@ -391,6 +391,15 @@ export const pricingModels = {
     capacityLabel: 'Spaces available',
     quantityLabel: 'Number of spaces',
     cycles: ['month', 'day', 'hour'],
+  },
+  // Several identical units on one listing, e.g. 50 self-storage units of the same size
+  'per-unit': {
+    label: 'Per unit',
+    rateLabel: 'Monthly price per unit',
+    unitLabel: 'unit',
+    capacityLabel: 'Identical units available',
+    quantityLabel: 'Number of units',
+    cycles: ['month'],
   },
   quote: {
     label: 'Quote on request',
@@ -1148,4 +1157,28 @@ export const certificatesNeedingRenewal = (publicData, now = new Date()) => {
     })
     .filter(c => c && c.daysLeft <= CERTIFICATE_REMINDER_DAYS)
     .sort((a, b) => a.daysLeft - b.daysLeft);
+};
+
+/**
+ * What to copy when a provider duplicates a listing: everything they entered,
+ * as a new draft. Photos and uploaded documents belong to the original and are
+ * not copied; SpaceLinq's verification of certificates is not copied either.
+ *
+ * @param {Object} listing - own listing entity
+ * @param {string} [suffix] - added to the title
+ * @returns {Object} params for sdk.ownListings.createDraft
+ */
+export const duplicateListingParams = (listing, suffix = ' (copy)') => {
+  const { title, description, publicData, privateData, price, geolocation, availabilityPlan } =
+    listing?.attributes || {};
+  const maxTitle = 1000 - suffix.length;
+  return {
+    title: `${(title || '').slice(0, maxTitle)}${suffix}`,
+    ...(description ? { description } : {}),
+    ...(publicData ? { publicData } : {}),
+    ...(privateData ? { privateData } : {}),
+    ...(price ? { price } : {}),
+    ...(geolocation ? { geolocation } : {}),
+    ...(availabilityPlan ? { availabilityPlan } : {}),
+  };
 };

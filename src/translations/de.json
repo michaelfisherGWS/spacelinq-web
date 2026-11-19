@@ -1763,5 +1763,8 @@
   "EditListingFilesPanel.spaceLinqTitle": "Certificate documents for {listingTitle}",
   "EditListingFilesForm.spaceLinqHelpText": "Optional. Upload a copy of each certificate you listed under Details so SpaceLinq can verify it. Only you and SpaceLinq can see these files. Customers cannot.",
   "ManageListingCard.spaceLinqCertificateExpired": "{label} certificate has expired and is no longer shown. Update it under Edit listing.",
-  "ManageListingCard.spaceLinqCertificateExpiring": "{label} certificate expires {days, plural, =0 {today} one {in # day} other {in # days}}. Update it under Edit listing."
+  "ManageListingCard.spaceLinqCertificateExpiring": "{label} certificate expires {days, plural, =0 {today} one {in # day} other {in # days}}. Update it under Edit listing.",
+  "ManageListingCard.spaceLinqDuplicate": "Duplicate listing",
+  "ManageListingsPage.spaceLinqDuplicateFailed": "The listing could not be duplicated. Please try again.",
+  "SpaceLinqAvailabilityForm.capacityHelp": "Several the same? List them once and enter how many you have. Each booking takes one or more of them, and the listing stops taking bookings for dates that are full."
 }

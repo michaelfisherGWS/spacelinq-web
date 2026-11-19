@@ -92,6 +92,8 @@ export const getSpaceLinqDisplayPrice = publicData => {
       ? 'per m² / month'
       : pricing.model === 'per-space'
       ? `per space / ${cycle}`
+      : pricing.model === 'per-unit'
+      ? `per unit / ${cycle}`
       : `per ${cycle}`;
   // A separate price for stays under a month, when the provider has set one
   const hasDailyRate =
@@ -102,8 +104,8 @@ export const getSpaceLinqDisplayPrice = publicData => {
   const shortStay = hasDailyRate
     ? {
         amount: pricing.dailyRate,
-        perUnit: ['per-pallet', 'per-space'].includes(pricing.model)
-          ? `per ${pricing.model === 'per-pallet' ? 'pallet' : 'space'} / day`
+        perUnit: ['per-pallet', 'per-space', 'per-unit'].includes(pricing.model)
+          ? `per ${pricing.model.replace('per-', '')} / day`
           : pricing.model === 'per-m2'
           ? 'per m² / day'
           : 'per day',

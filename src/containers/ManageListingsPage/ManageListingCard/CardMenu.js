@@ -39,12 +39,15 @@ const getMenuItems = listing => {
   const isDraft = state === LISTING_STATE_DRAFT;
   const isPendingApproval = state === LISTING_STATE_PENDING_APPROVAL;
 
-  // Currently, we only show "close listing" for active listings
-  if (!listing || isDraft || isClosed || isPendingApproval || isOutOfStock(listing)) {
+  if (!listing || isDraft || isPendingApproval) {
     return [];
   }
+  // SpaceLinq: any listing that has been published can be copied into a new draft
+  if (isClosed || isOutOfStock(listing)) {
+    return ['duplicate-listing'];
+  }
 
-  return ['close-listing'];
+  return ['close-listing', 'duplicate-listing'];
 };
 
 /**
@@ -60,7 +63,14 @@ const getMenuItems = listing => {
  * @returns {JSX.Element|null}
  */
 const CardMenu = props => {
-  const { isMenuOpen, listing, inProgressListingId, onToggleMenu, onCloseListing } = props;
+  const {
+    isMenuOpen,
+    listing,
+    inProgressListingId,
+    onToggleMenu,
+    onCloseListing,
+    onDuplicateListing,
+  } = props;
   const intl = useIntl();
   const menuItems = getMenuItems(listing);
 
@@ -118,6 +128,26 @@ const CardMenu = props => {
                       }}
                     >
                       <FormattedMessage id="ManageListingCard.closeListing" />
+                    </InlineTextButton>
+                  </MenuItem>
+                );
+              }
+
+              if (itemKey === 'duplicate-listing' && onDuplicateListing) {
+                return (
+                  <MenuItem key={itemKey}>
+                    <InlineTextButton
+                      rootClassName={menuItemClasses}
+                      onClick={event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (!inProgressListingId) {
+                          onToggleMenu(null);
+                          onDuplicateListing(listing);
+                        }
+                      }}
+                    >
+                      <FormattedMessage id="ManageListingCard.spaceLinqDuplicate" />
                     </InlineTextButton>
                   </MenuItem>
                 );

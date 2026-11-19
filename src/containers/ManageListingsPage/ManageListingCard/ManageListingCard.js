@@ -188,6 +188,7 @@ export const ManageListingCard = props => {
     listing,
     renderSizes,
     onCloseListing,
+    onDuplicateListing,
     onOpenListing,
     onDiscardDraft,
     onToggleMenu,
@@ -231,6 +232,7 @@ export const ManageListingCard = props => {
           inProgressListingId={actionsInProgressListingId}
           onToggleMenu={onToggleMenu}
           onCloseListing={onCloseListing}
+          onDuplicateListing={onDuplicateListing}
         />
 
         {thisListingInProgress ? (

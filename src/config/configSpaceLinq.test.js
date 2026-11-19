@@ -276,3 +276,47 @@ describe('certificate search and reminders', () => {
     expect(certificatesNeedingRenewal({}, now)).toEqual([]);
   });
 });
+
+describe('several identical units and duplicating', () => {
+  const {
+    duplicateListingParams,
+    pricingModelFor,
+    pricingModels,
+    unitKindForListing,
+  } = require('./configSpaceLinq');
+
+  it('prices self-storage per unit, with a number of identical units', () => {
+    expect(pricingModelFor('dedicated-space', 'self-storage')).toEqual('per-unit');
+    expect(pricingModels['per-unit'].capacityLabel).toEqual('Identical units available');
+    expect(unitKindForListing({ pricing: { model: 'per-unit' } })).toEqual('unit');
+    // Warehousing dedicated spaces are still one whole space
+    expect(pricingModelFor('dedicated-space', 'warehousing')).toEqual('fixed-monthly');
+  });
+
+  it('copies what the provider entered into a new draft', () => {
+    const listing = {
+      id: { uuid: 'abc' },
+      attributes: {
+        title: 'Unit 3x3',
+        description: 'Dry unit',
+        state: 'published',
+        publicData: { listingType: 'dedicated-space', pricing: { model: 'per-unit', rate: 100 } },
+        privateData: {},
+        price: { amount: 100, currency: 'NZD' },
+        geolocation: { lat: 1, lng: 2 },
+        availabilityPlan: { type: 'availability-plan/time', entries: [] },
+        metadata: { verifiedCertificates: [{ type: 'security', number: '1' }] },
+      },
+    };
+    expect(duplicateListingParams(listing)).toEqual({
+      title: 'Unit 3x3 (copy)',
+      description: 'Dry unit',
+      publicData: listing.attributes.publicData,
+      privateData: {},
+      price: listing.attributes.price,
+      geolocation: listing.attributes.geolocation,
+      availabilityPlan: listing.attributes.availabilityPlan,
+    });
+    expect(duplicateListingParams({ attributes: { title: 'A' } })).toEqual({ title: 'A (copy)' });
+  });
+});

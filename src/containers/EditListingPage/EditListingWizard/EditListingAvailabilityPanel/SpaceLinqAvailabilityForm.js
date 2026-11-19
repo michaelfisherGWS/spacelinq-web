@@ -203,6 +203,11 @@ const SpaceLinqAvailabilityForm = props => {
               }
             />
           )}
+          {['per-unit', 'per-space'].includes(model) ? (
+            <p className={css.info}>
+              <FormattedMessage id="SpaceLinqAvailabilityForm.capacityHelp" />
+            </p>
+          ) : null}
           <FieldTextInput
             id="SpaceLinqAvailabilityForm.accessHours"
             name="accessHours"
