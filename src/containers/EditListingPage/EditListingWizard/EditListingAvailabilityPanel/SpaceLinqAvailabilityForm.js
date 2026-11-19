@@ -254,6 +254,8 @@ const SpaceLinqAvailabilityForm = props => {
               id={
                 isHourly
                   ? 'SpaceLinqAvailabilityForm.hourlyInfo'
+                  : canBlock
+                  ? 'SpaceLinqAvailabilityForm.dayOnlyInfo'
                   : 'SpaceLinqAvailabilityForm.everyDayInfo'
               }
             />

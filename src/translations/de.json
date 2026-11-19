@@ -1599,6 +1599,7 @@
   "SpaceLinqAvailabilityForm.blockMode": "When can it be booked?",
   "SpaceLinqAvailabilityForm.blockMode.any": "Any time",
   "SpaceLinqAvailabilityForm.blockMode.anyDay": "Any day",
+  "SpaceLinqAvailabilityForm.dayOnlyInfo": "Outside any blocked days the space is bookable every day. To block a one-off date, use 'Add an availability exception' below.",
   "SpaceLinqAvailabilityForm.blockMode.blockDays": "Any day except regular days I block out",
   "SpaceLinqAvailabilityForm.blockMode.block": "Any time except regular hours I block out",
   "SpaceLinqAvailabilityForm.blockDays": "Not bookable on these days",
