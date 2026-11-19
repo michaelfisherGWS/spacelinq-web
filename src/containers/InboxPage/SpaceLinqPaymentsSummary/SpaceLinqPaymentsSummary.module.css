@@ -1,0 +1,41 @@
+@import '../../../styles/customMediaQueries.css';
+
+.root {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 0 0 24px 0;
+  padding: 18px;
+  border: 1px solid var(--colorGrey100);
+  border-radius: var(--borderRadiusMedium);
+  background-color: var(--colorWhite);
+
+  @media (--viewportMedium) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 24px;
+  }
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  composes: marketplaceSmallFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 0;
+}
+
+.value {
+  composes: h3 from global;
+  margin: 0;
+  color: var(--colorGrey900);
+}
+
+.detail {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey500);
+  margin: 0;
+}

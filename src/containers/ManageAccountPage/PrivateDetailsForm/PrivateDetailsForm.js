@@ -72,7 +72,8 @@ const PrivateDetailsForm = props => {
         const userFieldProps = getPropsForCustomUserFieldInputs(
           userFields,
           userTypeConfig?.userType,
-          false
+          false,
+          values
         );
 
         return (

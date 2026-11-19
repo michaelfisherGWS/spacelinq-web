@@ -771,3 +771,85 @@ export const applySpaceLinqListingFields = hostedFields => {
   const hostedKeys = tagged.map(f => f.key);
   return [...tagged, ...extraListingFields.filter(f => !hostedKeys.includes(f.key))];
 };
+
+/**
+ * Account details asked at sign-up. Every user says whether the account is
+ * personal or for a business; business accounts add their company details.
+ * Customer and provider are Sharetribe user types set in Console, so the
+ * personal/business choice is its own field and works for both.
+ * The details are protected data: visible to the user and the operator only.
+ */
+export const ACCOUNT_TYPE_FIELD_KEY = 'accountType';
+export const ACCOUNT_TYPE_BUSINESS = 'business';
+
+const businessUserField = (key, label, isRequired, placeholderMessage) => ({
+  key,
+  scope: 'protected',
+  schemaType: 'text',
+  // Only asked of business accounts, see isSpaceLinqUserFieldShown
+  businessOnly: true,
+  showConfig: { label, displayInProfile: false },
+  saveConfig: {
+    label,
+    displayInSignUp: true,
+    isRequired,
+    placeholderMessage,
+    ...(isRequired ? { requiredMessage: `Please enter the ${label.toLowerCase()}.` } : {}),
+  },
+  userTypeConfig: { limitToUserTypeIds: false },
+});
+
+export const spaceLinqUserFields = [
+  {
+    key: ACCOUNT_TYPE_FIELD_KEY,
+    scope: 'protected',
+    schemaType: 'enum',
+    enumOptions: [
+      { option: 'personal', label: 'Personal' },
+      { option: ACCOUNT_TYPE_BUSINESS, label: 'Business' },
+    ],
+    showConfig: { label: 'Account type', displayInProfile: false },
+    saveConfig: {
+      label: 'Is this account for you or for a business?',
+      displayInSignUp: true,
+      isRequired: true,
+      placeholderMessage: 'Choose an account type…',
+      requiredMessage: 'Please choose an account type.',
+    },
+    userTypeConfig: { limitToUserTypeIds: false },
+  },
+  businessUserField('companyName', 'Company name', true, 'Registered or trading name'),
+  businessUserField('nzbn', 'NZBN (optional)', false, '13-digit New Zealand Business Number'),
+  businessUserField('gstNumber', 'GST number (optional)', false, 'e.g. 123-456-789'),
+  businessUserField(
+    'accountsEmail',
+    'Accounts email (optional)',
+    false,
+    'Where receipts and invoices should go'
+  ),
+];
+
+/**
+ * Add SpaceLinq's account fields ahead of the user fields managed in Console.
+ *
+ * @param {Array<Object>} userFields - user fields from hosted configuration
+ * @returns {Array<Object>}
+ */
+export const applySpaceLinqUserFields = userFields => {
+  const hosted = userFields || [];
+  const hostedKeys = hosted.map(f => f.key);
+  return [...spaceLinqUserFields.filter(f => !hostedKeys.includes(f.key)), ...hosted];
+};
+
+/**
+ * Whether a user field is asked, given what the form holds so far.
+ * Company details are asked only once the account type is "business".
+ *
+ * @param {Object} fieldConfig - user field config
+ * @param {Object} [values] - current form values; without them every field is shown
+ * @returns {boolean}
+ */
+export const isSpaceLinqUserFieldShown = (fieldConfig, values) =>
+  !fieldConfig?.businessOnly ||
+  !values ||
+  values[`prot_${ACCOUNT_TYPE_FIELD_KEY}`] === ACCOUNT_TYPE_BUSINESS;

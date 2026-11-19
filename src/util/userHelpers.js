@@ -1,4 +1,5 @@
 import { EXTENDED_DATA_SCHEMA_TYPES } from './types';
+import { isSpaceLinqUserFieldShown } from '../config/configSpaceLinq';
 import { getFieldValue } from './fieldHelpers';
 
 /**
@@ -102,7 +103,8 @@ export const initialValuesForUserFields = (data, targetScope, targetUserType, us
 export const getPropsForCustomUserFieldInputs = (
   userFieldsConfig,
   userType = null,
-  isSignup = true
+  isSignup = true,
+  formValues = null
 ) => {
   return (
     userFieldsConfig?.reduce((pickedFields, fieldConfig) => {
@@ -115,7 +117,10 @@ export const getPropsForCustomUserFieldInputs = (
         !userTypeConfig?.limitToUserTypeIds || userTypeConfig?.userTypeIds?.includes(userType);
       const isUserScope = ['public', 'private', 'protected'].includes(scope);
 
-      return isKnownSchemaType && isTargetUserType && isUserScope && showField
+      // SpaceLinq: company details are only asked of business accounts
+      const isShownForValues = isSpaceLinqUserFieldShown(fieldConfig, formValues);
+
+      return isKnownSchemaType && isTargetUserType && isUserScope && showField && isShownForValues
         ? [
             ...pickedFields,
             {

@@ -50,7 +50,7 @@ const InboxLink = ({ notificationCount, inboxTab }) => {
       params={{ tab: inboxTab }}
     >
       <span className={css.topbarLinkLabel}>
-        <FormattedMessage id="TopbarDesktop.inbox" />
+        <FormattedMessage id="TopbarDesktop.spaceLinqBookings" />
         {notificationDot}
       </span>
     </NamedLink>

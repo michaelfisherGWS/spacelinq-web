@@ -154,12 +154,12 @@ describe('InboxPage', () => {
 
       await waitFor(() => {
         // Has links to orders tab
-        const ordersTabTitle = screen.getByRole('link', { name: 'InboxPage.ordersTabTitle' });
+        const ordersTabTitle = screen.getByRole('link', { name: 'InboxPage.spaceLinqOrdersTab' });
         expect(ordersTabTitle).toBeInTheDocument();
         expect(ordersTabTitle.getAttribute('href')).toContain('/inbox/orders');
 
         // Has links to sales tab
-        const salesTabTitle = screen.getByRole('link', { name: 'InboxPage.salesTabTitle' });
+        const salesTabTitle = screen.getByRole('link', { name: 'InboxPage.spaceLinqSalesTab' });
         expect(salesTabTitle).toBeInTheDocument();
         expect(salesTabTitle.getAttribute('href')).toContain('/inbox/sales');
 
@@ -251,12 +251,12 @@ describe('InboxPage', () => {
 
       await waitFor(() => {
         // Has links to orders tab
-        const ordersTabTitle = screen.getByRole('link', { name: 'InboxPage.ordersTabTitle' });
+        const ordersTabTitle = screen.getByRole('link', { name: 'InboxPage.spaceLinqOrdersTab' });
         expect(ordersTabTitle).toBeInTheDocument();
         expect(ordersTabTitle.getAttribute('href')).toContain('/inbox/orders');
 
         // Has links to sales tab
-        const salesTabTitle = screen.getByRole('link', { name: 'InboxPage.salesTabTitle' });
+        const salesTabTitle = screen.getByRole('link', { name: 'InboxPage.spaceLinqSalesTab' });
         expect(salesTabTitle).toBeInTheDocument();
         expect(salesTabTitle.getAttribute('href')).toContain('/inbox/sales');
 

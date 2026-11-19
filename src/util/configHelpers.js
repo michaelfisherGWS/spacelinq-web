@@ -2,6 +2,7 @@ import { subUnitDivisors } from '../config/settingsCurrency';
 import {
   applySpaceLinqListingFields,
   applySpaceLinqListingTypes,
+  applySpaceLinqUserFields,
   isSpaceLinqListingType,
 } from '../config/configSpaceLinq';
 import { getSupportedProcessesInfo, isBookingProcessAlias } from '../transactions/transaction';
@@ -1459,9 +1460,10 @@ const mergeUserConfig = (hostedConfig, defaultConfigs) => {
   const userTypes = shouldMerge
     ? union(hostedUserTypes, defaultUserTypes, 'userType')
     : hostedUserTypes;
-  const userFields = shouldMerge
-    ? union(hostedUserFields, defaultUserFields, 'key')
-    : hostedUserFields;
+  // SpaceLinq: add the personal / business account fields
+  const userFields = applySpaceLinqUserFields(
+    shouldMerge ? union(hostedUserFields, defaultUserFields, 'key') : hostedUserFields
+  );
 
   // To include user type validation (if you have user types in your default configuration),
   // pass userTypes to the validUserFields function as well:

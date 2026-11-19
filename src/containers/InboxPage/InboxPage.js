@@ -56,6 +56,7 @@ import NotFoundPage from '../../containers/NotFoundPage/NotFoundPage';
 import InboxSearchForm from './InboxSearchForm/InboxSearchForm';
 
 import { stateDataShape, getStateData } from './InboxPage.stateData';
+import SpaceLinqPaymentsSummary from './SpaceLinqPaymentsSummary/SpaceLinqPaymentsSummary';
 import css from './InboxPage.module.css';
 
 // Check if the transaction line-items use booking-related units
@@ -284,8 +285,8 @@ export const InboxPageComponent = props => {
 
   const isOrders = tab === 'orders';
   const hasNoResults = !fetchInProgress && transactions.length === 0 && !fetchOrdersOrSalesError;
-  const ordersTitle = intl.formatMessage({ id: 'InboxPage.ordersTitle' });
-  const salesTitle = intl.formatMessage({ id: 'InboxPage.salesTitle' });
+  const ordersTitle = intl.formatMessage({ id: 'InboxPage.spaceLinqOrdersTitle' });
+  const salesTitle = intl.formatMessage({ id: 'InboxPage.spaceLinqSalesTitle' });
   const title = isOrders ? ordersTitle : salesTitle;
   const search = parse(location.search);
 
@@ -344,7 +345,7 @@ export const InboxPageComponent = props => {
         {
           text: (
             <span>
-              <FormattedMessage id="InboxPage.ordersTabTitle" />
+              <FormattedMessage id="InboxPage.spaceLinqOrdersTab" />
               {customerNotificationCount > 0 ? (
                 <NotificationBadge count={customerNotificationCount} />
               ) : null}
@@ -364,7 +365,7 @@ export const InboxPageComponent = props => {
         {
           text: (
             <span>
-              <FormattedMessage id="InboxPage.salesTabTitle" />
+              <FormattedMessage id="InboxPage.spaceLinqSalesTab" />
               {providerNotificationCount > 0 ? (
                 <NotificationBadge count={providerNotificationCount} />
               ) : null}
@@ -394,7 +395,7 @@ export const InboxPageComponent = props => {
         sideNav={
           <>
             <H2 as="h1" className={css.title}>
-              <FormattedMessage id="InboxPage.title" />
+              <FormattedMessage id="InboxPage.spaceLinqTitle" />
             </H2>
             <TabNav
               rootClassName={css.tabs}
@@ -406,6 +407,8 @@ export const InboxPageComponent = props => {
         }
         footer={<FooterContainer />}
       >
+        {/* SpaceLinq: totals across all bookings, above the list */}
+        <SpaceLinqPaymentsSummary role={isOrders ? 'customer' : 'provider'} />
         <InboxSearchForm
           onSubmit={() => {}}
           onSelect={handleSortSelect(tab, routeConfiguration, history)}

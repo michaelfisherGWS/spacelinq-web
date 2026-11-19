@@ -176,7 +176,7 @@ const TopbarMobileMenu = props => {
         <ul className={css.accountLinksWrapper}>
           <li className={classNames(css.inbox, currentPageClass(`InboxPage:${inboxTab}`))}>
             <NamedLink name="InboxPage" params={{ tab: inboxTab }}>
-              <FormattedMessage id="TopbarMobileMenu.inboxLink" />
+              <FormattedMessage id="TopbarMobileMenu.spaceLinqBookings" />
               {notificationCountBadge}
             </NamedLink>
           </li>
