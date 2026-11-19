@@ -39,70 +39,111 @@ export const validBlockedHours = block => {
   return isValid ? { days, from: block.from, to: block.to } : null;
 };
 
+// A listing can have a few regular blocked periods, e.g. working hours and Saturday mornings
+export const MAX_BLOCKED_PERIODS = 3;
+const DEFAULT_BLOCK = { days: ['mon', 'tue', 'wed', 'thu', 'fri'], from: '08:00', to: '17:00' };
+
+/**
+ * All of a listing's regular blocked periods, checked and tidied.
+ * Accepts the single period saved by earlier versions.
+ *
+ * @param {Array<Object>|Object} [blocked] - publicData.blockedHours
+ * @returns {Array<Object>} valid periods, at most MAX_BLOCKED_PERIODS
+ */
+export const validBlockedPeriods = blocked =>
+  (Array.isArray(blocked) ? blocked : blocked ? [blocked] : [])
+    .map(validBlockedHours)
+    .filter(Boolean)
+    .slice(0, MAX_BLOCKED_PERIODS);
+
+const hourOf = time => Number(time.slice(0, 2));
+
 /**
  * Build an every-day availability plan with the given capacity.
  * Storage is continuous, so every day is bookable all day; access hours are
  * stored separately as information for customers. Space booked by the hour
- * can leave out regular blocked hours on chosen weekdays.
+ * can leave out regular blocked periods on chosen weekdays.
  *
  * @param {number} capacity - pallet positions / m² / spaces / 1 for a whole space
  * @param {string} timezone
- * @param {Object} [blockedHours] - { days, from, to }, for hourly listings only
+ * @param {Array<Object>|Object} [blockedHours] - blocked periods ({ days, from, to })
  * @returns {Object} availabilityPlan
  */
 export const createSpaceLinqAvailabilityPlan = (capacity, timezone, blockedHours) => {
   const seats = Math.max(1, Math.floor(capacity || 1));
-  const block = validBlockedHours(blockedHours);
+  const blocks = validBlockedPeriods(blockedHours);
   const entriesForDay = dayOfWeek => {
-    if (!block || !block.days.includes(dayOfWeek)) {
-      return [{ dayOfWeek, startTime: '00:00', endTime: '00:00', seats }];
-    }
-    // Bookable before the block starts and after it ends. An end time of 00:00 is midnight.
-    const before =
-      block.from !== '00:00' ? [{ dayOfWeek, startTime: '00:00', endTime: block.from, seats }] : [];
-    const after =
-      block.to !== '24:00' ? [{ dayOfWeek, startTime: block.to, endTime: '00:00', seats }] : [];
-    return [...before, ...after];
+    const dayBlocks = blocks.filter(b => b.days.includes(dayOfWeek));
+    // Which of the day's 24 hours can be booked
+    const open = Array.from(
+      { length: 24 },
+      (_, h) => !dayBlocks.some(b => hourOf(b.from) <= h && h < hourOf(b.to))
+    );
+    // Runs of open hours become plan entries. An end time of 00:00 is midnight.
+    return open.reduce((entries, isOpen, h) => {
+      if (!isOpen) {
+        return entries;
+      }
+      const last = entries[entries.length - 1];
+      const endTime = h === 23 ? '00:00' : `${pad(h + 1)}:00`;
+      return last && last.endHour === h
+        ? [...entries.slice(0, -1), { ...last, endTime, endHour: h + 1 }]
+        : [...entries, { dayOfWeek, startTime: `${pad(h)}:00`, endTime, seats, endHour: h + 1 }];
+    }, []);
   };
   return {
     type: 'availability-plan/time',
     timezone: timezone || SPACELINQ_DEFAULT_TIMEZONE,
-    entries: WEEKDAYS.flatMap(entriesForDay),
+    entries: WEEKDAYS.flatMap(entriesForDay).map(({ endHour, ...entry }) => entry),
   };
 };
 
 /**
- * Form values for the blocked-hours fields from saved listing data.
+ * Form values for the blocked-period fields from saved listing data.
  *
- * @param {Object} [blockedHours] - publicData.blockedHours
- * @returns {Object} { blockMode, blockDays, blockFrom, blockTo }
+ * @param {Array<Object>|Object} [blockedHours] - publicData.blockedHours
+ * @returns {Object} { blockMode, blocks }
  */
 export const blockedHoursToFormValues = blockedHours => {
-  const block = validBlockedHours(blockedHours);
+  const blocks = validBlockedPeriods(blockedHours);
   return {
-    blockMode: block ? 'block' : 'any',
-    blockDays: block ? block.days : ['mon', 'tue', 'wed', 'thu', 'fri'],
-    blockFrom: block ? block.from : '08:00',
-    blockTo: block ? block.to : '17:00',
+    blockMode: blocks.length ? 'block' : 'any',
+    blocks: blocks.length ? blocks : [DEFAULT_BLOCK],
   };
 };
 
+// Space booked by the day is blocked for the whole day, in a single period
+const blocksInForm = (values, wholeDays) =>
+  wholeDays
+    ? (values?.blocks || []).slice(0, 1).map(b => ({ ...b, from: '00:00', to: '24:00' }))
+    : values?.blocks || [];
+
 /**
- * Blocked hours to save, from form values.
+ * Whether every blocked period on the form is complete.
  *
  * @param {Object} values - form values
  * @param {boolean} [wholeDays] - block the chosen days entirely
- * @returns {Object|null}
+ * @returns {boolean}
  */
-export const blockedHoursFromFormValues = (values, wholeDays = false) =>
-  values?.blockMode === 'block'
-    ? validBlockedHours({
-        days: values.blockDays,
-        // Space booked by the day is blocked for the whole day
-        from: wholeDays ? '00:00' : values.blockFrom,
-        to: wholeDays ? '24:00' : values.blockTo,
-      })
-    : null;
+export const areBlockedPeriodsValid = (values, wholeDays = false) => {
+  const blocks = blocksInForm(values, wholeDays);
+  return blocks.length > 0 && blocks.every(b => !!validBlockedHours(b));
+};
+
+/**
+ * Blocked periods to save, from form values.
+ *
+ * @param {Object} values - form values
+ * @param {boolean} [wholeDays] - block the chosen days entirely
+ * @returns {Array<Object>|null}
+ */
+export const blockedHoursFromFormValues = (values, wholeDays = false) => {
+  if (values?.blockMode !== 'block') {
+    return null;
+  }
+  const blocks = validBlockedPeriods(blocksInForm(values, wholeDays));
+  return blocks.length ? blocks : null;
+};
 
 /**
  * Current capacity from an existing plan (largest seat count).
@@ -137,11 +178,11 @@ const SpaceLinqAvailabilityForm = props => {
       // The parent builds initial values on each render; compare them by content
       initialValuesEqual={(a, b) => JSON.stringify(a) === JSON.stringify(b)}
       validate={values =>
-        canBlock && values.blockMode === 'block' && !blockedHoursFromFormValues(values, !isHourly)
+        canBlock && values.blockMode === 'block' && !areBlockedPeriodsValid(values, !isHourly)
           ? { blockMode: intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockInvalid' }) }
           : {}
       }
-      render={({ handleSubmit, className, inProgress, invalid, saved, values, errors }) => (
+      render={({ handleSubmit, className, inProgress, invalid, saved, values, errors, form }) => (
         <Form className={classNames(css.root, className)} onSubmit={handleSubmit}>
           {isWholeSpace ? (
             <p className={css.info}>
@@ -195,57 +236,94 @@ const SpaceLinqAvailabilityForm = props => {
                   })}
                 </option>
               </FieldSelect>
-              {values.blockMode === 'block' ? (
-                <fieldset className={css.block}>
-                  <legend className={css.blockLegend}>
-                    <FormattedMessage id="SpaceLinqAvailabilityForm.blockDays" />
-                  </legend>
-                  <div className={css.days}>
-                    {BLOCK_DAYS.map(day => (
-                      <label key={day} className={css.day}>
-                        <Field
-                          name="blockDays"
-                          component="input"
-                          type="checkbox"
-                          value={day}
-                          className={css.checkbox}
-                        />
-                        <span>
-                          <FormattedMessage id={`SpaceLinqAvailabilityForm.day.${day}`} />
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  {isHourly ? (
-                    <div className={css.hours}>
-                      <FieldSelect
-                        id="SpaceLinqAvailabilityForm.blockFrom"
-                        name="blockFrom"
-                        className={css.hour}
-                        label={intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockFrom' })}
-                      >
-                        {BLOCK_FROM_HOURS.map(h => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
-                      </FieldSelect>
-                      <FieldSelect
-                        id="SpaceLinqAvailabilityForm.blockTo"
-                        name="blockTo"
-                        className={css.hour}
-                        label={intl.formatMessage({ id: 'SpaceLinqAvailabilityForm.blockTo' })}
-                      >
-                        {BLOCK_TO_HOURS.map(h => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
-                      </FieldSelect>
-                    </div>
-                  ) : null}
-                  {errors?.blockMode ? <p className={css.error}>{errors.blockMode}</p> : null}
-                </fieldset>
+              {values.blockMode === 'block'
+                ? (isHourly ? values.blocks || [] : (values.blocks || []).slice(0, 1)).map(
+                    (block, i, shown) => (
+                      <fieldset key={i} className={css.block}>
+                        <legend className={css.blockLegend}>
+                          <FormattedMessage id="SpaceLinqAvailabilityForm.blockDays" />
+                        </legend>
+                        <div className={css.days}>
+                          {BLOCK_DAYS.map(day => (
+                            <label key={day} className={css.day}>
+                              <Field
+                                name={`blocks[${i}].days`}
+                                component="input"
+                                type="checkbox"
+                                value={day}
+                                className={css.checkbox}
+                              />
+                              <span>
+                                <FormattedMessage id={`SpaceLinqAvailabilityForm.day.${day}`} />
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                        {isHourly ? (
+                          <div className={css.hours}>
+                            <FieldSelect
+                              id={`SpaceLinqAvailabilityForm.blockFrom${i}`}
+                              name={`blocks[${i}].from`}
+                              className={css.hour}
+                              label={intl.formatMessage({
+                                id: 'SpaceLinqAvailabilityForm.blockFrom',
+                              })}
+                            >
+                              {BLOCK_FROM_HOURS.map(h => (
+                                <option key={h} value={h}>
+                                  {h}
+                                </option>
+                              ))}
+                            </FieldSelect>
+                            <FieldSelect
+                              id={`SpaceLinqAvailabilityForm.blockTo${i}`}
+                              name={`blocks[${i}].to`}
+                              className={css.hour}
+                              label={intl.formatMessage({
+                                id: 'SpaceLinqAvailabilityForm.blockTo',
+                              })}
+                            >
+                              {BLOCK_TO_HOURS.map(h => (
+                                <option key={h} value={h}>
+                                  {h}
+                                </option>
+                              ))}
+                            </FieldSelect>
+                          </div>
+                        ) : null}
+                        {isHourly && shown.length > 1 ? (
+                          <button
+                            type="button"
+                            className={css.blockAction}
+                            onClick={() =>
+                              form.change('blocks', shown.filter((_, index) => index !== i))
+                            }
+                          >
+                            <FormattedMessage id="SpaceLinqAvailabilityForm.removeBlock" />
+                          </button>
+                        ) : null}
+                      </fieldset>
+                    )
+                  )
+                : null}
+              {values.blockMode === 'block' &&
+              isHourly &&
+              (values.blocks || []).length < MAX_BLOCKED_PERIODS ? (
+                <button
+                  type="button"
+                  className={css.blockAction}
+                  onClick={() =>
+                    form.change('blocks', [
+                      ...(values.blocks || []),
+                      { days: ['sat'], from: '08:00', to: '12:00' },
+                    ])
+                  }
+                >
+                  <FormattedMessage id="SpaceLinqAvailabilityForm.addBlock" />
+                </button>
+              ) : null}
+              {values.blockMode === 'block' && errors?.blockMode ? (
+                <p className={css.error}>{errors.blockMode}</p>
               ) : null}
             </>
           ) : null}

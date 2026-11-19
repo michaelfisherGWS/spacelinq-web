@@ -173,6 +173,7 @@ const EstimatedCustomerBreakdownMaybe = props => {
       timeZone={timeZone}
       currency={currency}
       marketplaceName={marketplaceName}
+      unitKind={props.unitKind}
     />
   ) : null;
 };

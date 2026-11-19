@@ -409,6 +409,18 @@ export const defaultPricingModelForListingType = {
   'quote-on-request': 'quote',
 };
 
+// What one bookable unit is, for wording such as "2 spaces" in a price breakdown
+const UNIT_KIND_BY_MODEL = { 'per-pallet': 'pallet', 'per-m2': 'sqm', 'per-space': 'space' };
+
+/**
+ * The kind of unit a listing is booked in.
+ *
+ * @param {Object} publicData - listing publicData
+ * @returns {'pallet'|'sqm'|'space'|'unit'}
+ */
+export const unitKindForListing = publicData =>
+  UNIT_KIND_BY_MODEL[(publicData?.pricing?.model)] || 'unit';
+
 /**
  * Pricing model for a listing: the category's own model when it has one,
  * otherwise the default for the listing type.

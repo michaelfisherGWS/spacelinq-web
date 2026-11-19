@@ -28,6 +28,7 @@ import { getSpaceLinqDisplayPrice } from '../../util/spacelinqPricing';
 import {
   pricingModels as spaceLinqPricingModels,
   isSpaceLinqListingType,
+  unitKindForListing,
 } from '../../config/configSpaceLinq';
 import { createSlug, parse, stringify } from '../../util/urlHelpers';
 import { userDisplayNameAsString } from '../../util/data';
@@ -547,6 +548,7 @@ const OrderPanel = props => {
             seatsEnabled={seatsEnabled}
             instantBooking={publicData?.pricing?.instantBooking === true}
             quantityLabel={spaceLinqPricingModels[(publicData?.pricing?.model)]?.quantityLabel}
+            unitKind={unitKindForListing(publicData)}
             className={css.bookingForm}
             formId="OrderPanelBookingTimeForm"
             dayCountAvailableForBooking={dayCountAvailableForBooking}
@@ -580,6 +582,7 @@ const OrderPanel = props => {
             noticeDays={publicData?.pricing?.noticeDays}
             instantBooking={publicData?.pricing?.instantBooking === true}
             quantityLabel={spaceLinqPricingModels[(publicData?.pricing?.model)]?.quantityLabel}
+            unitKind={unitKindForListing(publicData)}
             {...priceVariantsMaybe}
             {...sharedProps}
           />

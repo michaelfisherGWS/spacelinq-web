@@ -9,6 +9,7 @@ import {
   pickTransactionFieldsData,
 } from '../../util/fieldHelpers.js';
 import { propTypes } from '../../util/types';
+import { unitKindForListing } from '../../config/configSpaceLinq';
 import { ensureTransaction } from '../../util/data';
 import { createSlug } from '../../util/urlHelpers';
 import {
@@ -662,6 +663,7 @@ export const CheckoutPageWithPayment = props => {
         {...txBookingMaybe}
         currency={config.currency}
         marketplaceName={config.marketplaceName}
+        unitKind={unitKindForListing(listing?.attributes?.publicData)}
       />
     ) : null;
 

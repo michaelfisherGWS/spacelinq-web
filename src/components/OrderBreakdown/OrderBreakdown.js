@@ -18,6 +18,8 @@ import {
   propTypes,
 } from '../../util/types';
 
+import { unitKindForListing } from '../../config/configSpaceLinq';
+
 import LineItemBookingPeriod from './LineItemBookingPeriod';
 import LineItemBasePriceMaybe from './LineItemBasePriceMaybe';
 import LineItemSubTotalMaybe from './LineItemSubTotalMaybe';
@@ -44,7 +46,10 @@ export const OrderBreakdownComponent = props => {
     currency,
     marketplaceName,
     intl,
+    unitKind: unitKindProp,
   } = props;
+  // SpaceLinq: what one booked unit is called (pallet, m², space)
+  const unitKind = unitKindProp || unitKindForListing(transaction?.listing?.attributes?.publicData);
 
   const isCustomer = userRole === 'customer';
   const isProvider = userRole === 'provider';
@@ -113,7 +118,12 @@ export const OrderBreakdownComponent = props => {
         timeZone={timeZone}
       />
 
-      <LineItemBasePriceMaybe lineItems={lineItems} code={lineItemUnitType} intl={intl} />
+      <LineItemBasePriceMaybe
+        lineItems={lineItems}
+        code={lineItemUnitType}
+        unitKind={unitKind}
+        intl={intl}
+      />
       <LineItemShippingFeeMaybe lineItems={lineItems} intl={intl} />
       <LineItemPickupFeeMaybe lineItems={lineItems} intl={intl} />
       <LineItemUnknownItemsMaybe lineItems={lineItems} isProvider={isProvider} intl={intl} />

@@ -25,7 +25,7 @@ import css from './OrderBreakdown.module.css';
  * @returns {JSX.Element}
  */
 const LineItemBasePriceMaybe = props => {
-  const { lineItems, code, intl } = props;
+  const { lineItems, code, intl, unitKind = 'unit' } = props;
   const isDigitalItem = code === LINE_ITEM_FILE;
   const isNightly = code === LINE_ITEM_NIGHT;
   const isDaily = code === LINE_ITEM_DAY;
@@ -71,7 +71,7 @@ const LineItemBasePriceMaybe = props => {
           ? 'OrderBreakdown.spaceLinqMonthUnits'
           : 'OrderBreakdown.spaceLinqMonth'
       }
-      values={{ unitPrice, quantity, seats: unitPurchase?.seats }}
+      values={{ unitPrice, quantity, seats: unitPurchase?.seats, unitKind }}
     />
   ) : unitPurchase?.seats ? (
     <FormattedMessage
@@ -83,7 +83,7 @@ const LineItemBasePriceMaybe = props => {
           ? 'OrderBreakdown.spaceLinqHourUnits'
           : `${translationKey}Seats`
       }
-      values={{ unitPrice, quantity, seats: unitPurchase.seats }}
+      values={{ unitPrice, quantity, seats: unitPurchase.seats, unitKind }}
     />
   ) : (
     <FormattedMessage id={translationKey} values={{ unitPrice, quantity }} />

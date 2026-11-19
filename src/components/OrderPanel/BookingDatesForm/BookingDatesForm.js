@@ -590,6 +590,7 @@ export const BookingDatesForm = props => {
     insuranceOffer = null,
     noticeDays,
     instantBooking = false,
+    unitKind,
     quantityLabel,
     minTermMonths,
     ...rest
@@ -1210,6 +1211,7 @@ export const BookingDatesForm = props => {
                   currency={unitPrice.currency}
                   marketplaceName={marketplaceName}
                   processName={BOOKING_PROCESS_NAME}
+                  unitKind={unitKind}
                 />
               </div>
             ) : null}

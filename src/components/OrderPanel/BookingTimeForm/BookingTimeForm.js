@@ -104,6 +104,7 @@ export const BookingTimeForm = props => {
     seatsEnabled,
     // SpaceLinq: what a bookable unit is called, and whether bookings confirm instantly
     quantityLabel,
+    unitKind,
     instantBooking = false,
     isPriceVariationsInUse,
     priceVariants = [],
@@ -256,6 +257,7 @@ export const BookingTimeForm = props => {
                   currency={unitPrice.currency}
                   marketplaceName={marketplaceName}
                   processName={BOOKING_PROCESS_NAME}
+                  unitKind={unitKind}
                 />
               </div>
             ) : null}

@@ -9,6 +9,10 @@ import { camelize } from '../../util/string';
 import { propTypes } from '../../util/types';
 
 import FallbackPage from './FallbackPage';
+import SectionSpaceCategories, {
+  SPACE_CATEGORIES_SECTION_TYPE,
+  withSpaceCategoriesSection,
+} from './SectionSpaceCategories/SectionSpaceCategories';
 import { ASSET_NAME } from './LandingPage.duck';
 import { fetchFeaturedListings } from '../../ducks/featuredListings.duck';
 import { getListingsById } from '../../ducks/marketplaceData.duck';
@@ -23,7 +27,13 @@ export const LandingPageComponent = props => {
 
   return (
     <PageBuilder
-      pageAssetsData={pageAssetsData?.[camelize(ASSET_NAME)]?.data}
+      // SpaceLinq: category tiles sit straight after the hero section
+      pageAssetsData={withSpaceCategoriesSection(pageAssetsData?.[camelize(ASSET_NAME)]?.data)}
+      options={{
+        sectionComponents: {
+          [SPACE_CATEGORIES_SECTION_TYPE]: { component: SectionSpaceCategories },
+        },
+      }}
       inProgress={inProgress}
       error={error}
       fallbackPage={<FallbackPage error={error} />}
