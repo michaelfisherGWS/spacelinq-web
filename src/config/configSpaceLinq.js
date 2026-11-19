@@ -705,6 +705,7 @@ export const extraListingFields = [
     enumOptions: spaceCategories.map(c => ({ option: c.key, label: c.label })),
     filterConfig: {
       indexForSearch: true,
+      showFilter: true,
       filterType: 'SelectSingleFilter',
       label: 'Category',
       group: 'primary',
@@ -998,6 +999,7 @@ const dgClassesField = () => ({
   enumOptions: hazardClasses.map(c => ({ option: c.key, label: c.label })),
   filterConfig: {
     indexForSearch: true,
+    showFilter: true,
     filterType: 'SelectMultipleFilter',
     label: 'Dangerous goods certified',
     searchMode: 'has_any',
