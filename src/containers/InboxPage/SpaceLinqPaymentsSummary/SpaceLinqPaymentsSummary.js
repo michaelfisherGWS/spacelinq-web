@@ -48,7 +48,7 @@ const SpaceLinqPaymentsSummary = props => {
   }, [dispatch, role]);
 
   // Nothing to show until there has been a payment or one is coming
-  if (!summary || !summary.currency || (summary.paidAmount === 0 && summary.upcomingCount === 0)) {
+  if (!summary || !summary.currency || (summary.paidAmount === 0 && !summary.nextPayment)) {
     return null;
   }
 

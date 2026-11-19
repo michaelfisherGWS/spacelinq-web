@@ -49,6 +49,8 @@ describe('summarisePayments', () => {
     const summary = summarisePayments(
       [
         booking(5000, ['transition/request-payment']),
+        // Card authorised, still waiting for the provider: not charged yet
+        booking(5500, ['transition/request-payment', 'transition/confirm-payment']),
         booking(6000, [
           'transition/request-payment',
           'transition/confirm-payment',
@@ -67,6 +69,7 @@ describe('summarisePayments', () => {
     );
     expect(summary.paidAmount).toBe(0);
     expect(summary.upcomingCount).toBe(0);
+    expect(summary.nextPayment).toBe(null);
   });
 
   it('lists months that will be charged in the next 30 days, earliest first', () => {
@@ -86,6 +89,17 @@ describe('summarisePayments', () => {
     expect(summary.upcomingAmount).toBe(38000);
     expect(summary.nextPayment.amount).toBe(20000);
     expect(summary.nextPayment.date).toEqual(daysFromNow(4));
+  });
+
+  it('shows the next payment even when it is more than 30 days away', () => {
+    const summary = summarisePayments(
+      [month(18000, 'transition/accept', 45), month(18000, 'transition/accept', 75)],
+      'customer',
+      now
+    );
+    expect(summary.upcomingCount).toBe(0);
+    expect(summary.upcomingAmount).toBe(0);
+    expect(summary.nextPayment).toEqual({ amount: 18000, date: daysFromNow(42) });
   });
 
   it('shows a provider what they receive after fees', () => {

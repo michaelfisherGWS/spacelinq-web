@@ -20,22 +20,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PAGE_SIZE = 100;
 const MAX_PAGES = 3;
 
-// A one-off booking (or the first month of an ongoing one) has been paid once
-// payment was confirmed, unless it was later declined, expired or cancelled.
-const PAID_TRANSITIONS = ['transition/confirm-payment', 'transition/confirm-payment-instant'];
-const REFUNDED_TRANSITIONS = [
-  'transition/decline',
-  'transition/operator-decline',
-  'transition/expire',
-  'transition/cancel',
-];
+// A one-off booking (or the first month of an ongoing one) is charged when the
+// provider accepts it, or straight away on an instant booking. Until then the
+// card is only authorised. A later cancellation refunds it.
+const INSTANT_PAYMENT = 'transition/confirm-payment-instant';
+const ACCEPTED_TRANSITIONS = ['transition/accept', 'transition/operator-accept'];
+const REFUNDED_TRANSITIONS = ['transition/cancel'];
 
 const isPaidBooking = tx => {
   const names = (tx.attributes.transitions || []).map(t => t.transition);
-  return (
-    names.some(n => PAID_TRANSITIONS.includes(n)) &&
-    !names.some(n => REFUNDED_TRANSITIONS.includes(n))
-  );
+  const isCharged =
+    names.includes(INSTANT_PAYMENT) || names.some(n => ACCEPTED_TRANSITIONS.includes(n));
+  return isCharged && !names.some(n => REFUNDED_TRANSITIONS.includes(n));
 };
 
 /**
@@ -74,23 +70,24 @@ export const summarisePayments = (transactions, role, now = new Date()) => {
     const start = tx.booking?.attributes?.start;
     if (isAwaitingCharge && start) {
       const chargeTime = new Date(start).getTime() - CHARGE_DAYS_BEFORE_START * DAY_MS;
-      return chargeTime <= windowEnd
-        ? {
-            ...acc,
-            currency,
-            upcoming: [...acc.upcoming, { amount: total.amount, date: new Date(chargeTime) }],
-          }
-        : acc;
+      return {
+        ...acc,
+        currency,
+        upcoming: [...acc.upcoming, { amount: total.amount, date: new Date(chargeTime) }],
+      };
     }
     return acc;
   }, initial);
 
-  const upcoming = result.upcoming.sort((a, b) => a.date - b.date);
+  // Every month still to be charged, earliest first. The totals cover the next
+  // 30 days; the next payment is shown however far away it is.
+  const awaiting = result.upcoming.sort((a, b) => a.date - b.date);
+  const upcoming = awaiting.filter(p => p.date.getTime() <= windowEnd);
   return {
     paidAmount: result.paidAmount,
     upcomingAmount: upcoming.reduce((sum, p) => sum + p.amount, 0),
     upcomingCount: upcoming.length,
-    nextPayment: upcoming[0] || null,
+    nextPayment: awaiting[0] || null,
     currency: result.currency,
   };
 };
