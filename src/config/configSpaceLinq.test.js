@@ -228,3 +228,51 @@ describe('certificates', () => {
     expect(currentCertificates({}, {}, now)).toEqual([]);
   });
 });
+
+describe('certificate search and reminders', () => {
+  const {
+    applySpaceLinqListingFields,
+    certificatesNeedingRenewal,
+    dgClassesForSearch,
+  } = require('./configSpaceLinq');
+  const now = new Date('2026-11-19T00:00:00.000Z');
+  const cert = (type, expiry, classes) => ({ type, number: '1', expiry, classes });
+
+  it('indexes classes of current location compliance certificates only', () => {
+    expect(
+      dgClassesForSearch(
+        [
+          cert('location-compliance', '2027-01-01', ['class-8', 'class-3']),
+          cert('location-compliance', '2026-01-01', ['class-6']),
+          cert('security', '2027-01-01', ['class-2']),
+        ],
+        now
+      )
+    ).toEqual(['class-3', 'class-8']);
+    expect(dgClassesForSearch(undefined, now)).toEqual([]);
+  });
+
+  it('adds a searchable, derived dangerous goods field', () => {
+    const field = applySpaceLinqListingFields([]).find(f => f.key === 'dgClasses');
+    expect(field.derived).toBe(true);
+    expect(field.filterConfig.indexForSearch).toBe(true);
+    expect(field.enumOptions).toHaveLength(6);
+  });
+
+  it('flags certificates that have expired or expire within 30 days', () => {
+    const publicData = {
+      certificates: [
+        cert('security', '2026-12-19'),
+        cert('food-registration', '2026-12-20'),
+        cert('location-compliance', '2026-11-10'),
+        cert('customs-controlled-area', '2026-11-19'),
+      ],
+    };
+    expect(certificatesNeedingRenewal(publicData, now)).toEqual([
+      { label: 'Dangerous goods facility', expiry: '2026-11-10', daysLeft: -9 },
+      { label: 'Customs controlled area', expiry: '2026-11-19', daysLeft: 0 },
+      { label: 'Security certified', expiry: '2026-12-19', daysLeft: 30 },
+    ]);
+    expect(certificatesNeedingRenewal({}, now)).toEqual([]);
+  });
+});

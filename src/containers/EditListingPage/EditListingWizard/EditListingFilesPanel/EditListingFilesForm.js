@@ -94,6 +94,8 @@ export const EditListingFilesForm = props => {
           invalid,
           files,
           showAttachFiles,
+          filesOptional = false,
+          helpTextId = 'EditListingFilesForm.helpText',
           isDraft,
           hasPendingFileUploads,
           fileInputRef,
@@ -111,7 +113,7 @@ export const EditListingFilesForm = props => {
         const filesVerifiedIfPublished =
           isDraft ||
           (Array.isArray(files) &&
-            files.length > 0 &&
+            (filesOptional || files.length > 0) &&
             files.every(
               file =>
                 !file.verificationInProgress &&
@@ -128,7 +130,10 @@ export const EditListingFilesForm = props => {
         // 3) or the listing has been published (edit flow) and some files are still awaiting verification
         const filesNotReady =
           showAttachFiles &&
-          (!files?.length || hasPendingFileUploads || hasFileErrors || !filesVerifiedIfPublished);
+          ((!filesOptional && !files?.length) ||
+            hasPendingFileUploads ||
+            hasFileErrors ||
+            !filesVerifiedIfPublished);
 
         const submitReady = (updated && pristineSinceLastSubmit) || ready;
         const submitInProgress = updateInProgress;
@@ -170,7 +175,7 @@ export const EditListingFilesForm = props => {
               fileInputRef={fileInputRef}
             />
             <H5 as="h2" className={css.helpText}>
-              <FormattedMessage id="EditListingFilesForm.helpText" />
+              <FormattedMessage id={helpTextId} />
             </H5>
 
             <UpdateListingError error={updateListingError} />

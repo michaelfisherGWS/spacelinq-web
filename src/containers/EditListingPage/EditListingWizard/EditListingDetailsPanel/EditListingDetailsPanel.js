@@ -20,6 +20,7 @@ import { isBookingProcessAlias } from '../../../../transactions/transaction';
 import {
   SPACE_CATEGORY_FIELD_KEY,
   certificatesForSaving,
+  dgClassesForSearch,
   getSpaceCategory,
   isFieldForSpaceListing,
   isSpaceLinqListingType,
@@ -451,7 +452,11 @@ const EditListingDetailsPanel = props => {
                 ...cleanedNestedCategories,
                 ...publicListingFields,
                 ...(isSpaceLinqListingType(listingType)
-                  ? { certificates: certificatesForSaving(rest.certificates) }
+                  ? {
+                      certificates: certificatesForSaving(rest.certificates),
+                      // Search finds the listing by the classes its current certificates cover
+                      dgClasses: dgClassesForSearch(certificatesForSaving(rest.certificates)),
+                    }
                   : {}),
               },
               privateData: privateListingFields,

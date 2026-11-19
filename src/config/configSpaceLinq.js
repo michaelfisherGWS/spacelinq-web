@@ -769,7 +769,10 @@ export const applySpaceLinqListingFields = hostedFields => {
     WAREHOUSING_CONSOLE_FIELDS.includes(f.key) ? { ...f, spaceCategories: WAREHOUSING_ONLY } : f
   );
   const hostedKeys = tagged.map(f => f.key);
-  return [...tagged, ...extraListingFields.filter(f => !hostedKeys.includes(f.key))];
+  return [
+    ...tagged,
+    ...[...extraListingFields, dgClassesField()].filter(f => !hostedKeys.includes(f.key)),
+  ];
 };
 
 /**
@@ -980,6 +983,30 @@ export const certificateTypes = [
   },
 ];
 
+export const DG_CLASSES_FIELD_KEY = 'dgClasses';
+
+/**
+ * Search filter for the dangerous goods classes a listing is certified for.
+ * The value is not entered by hand: it is worked out from the listing's
+ * certificates each time the listing details are saved (see dgClassesForSearch).
+ */
+const dgClassesField = () => ({
+  key: DG_CLASSES_FIELD_KEY,
+  derived: true,
+  scope: 'public',
+  schemaType: 'multi-enum',
+  enumOptions: hazardClasses.map(c => ({ option: c.key, label: c.label })),
+  filterConfig: {
+    indexForSearch: true,
+    filterType: 'SelectMultipleFilter',
+    label: 'Dangerous goods certified',
+    searchMode: 'has_any',
+    group: 'secondary',
+  },
+  showConfig: { label: 'Dangerous goods certified', displayOnListingPage: false },
+  saveConfig: { label: 'Dangerous goods certified', isRequired: false },
+});
+
 export const getCertificateType = key => certificateTypes.find(t => t.key === key) || null;
 
 export const CERTIFICATE_VERIFIED = 'verified';
@@ -1072,3 +1099,51 @@ export const currentCertificates = (publicData, metadata, now = new Date()) =>
     })
     .filter(c => c && c.status !== CERTIFICATE_EXPIRED)
     .sort((a, b) => (a.status === b.status ? 0 : a.status === CERTIFICATE_VERIFIED ? -1 : 1));
+
+/**
+ * The dangerous goods classes a listing can be found under in search: those on
+ * its location compliance certificates that have not expired.
+ *
+ * @param {Array<Object>} certificates - as saved in publicData.certificates
+ * @param {Date} [now]
+ * @returns {Array<string>} hazard class keys
+ */
+export const dgClassesForSearch = (certificates, now = new Date()) => {
+  const covered = (Array.isArray(certificates) ? certificates : [])
+    .filter(
+      c =>
+        c?.type === LOCATION_COMPLIANCE_CERTIFICATE &&
+        certificateStatus(c, null, now) !== CERTIFICATE_EXPIRED
+    )
+    .flatMap(c => c.classes || []);
+  return hazardClasses.map(c => c.key).filter(k => covered.includes(k));
+};
+
+// A certificate is flagged to its provider this many days before it expires
+export const CERTIFICATE_REMINDER_DAYS = 30;
+
+/**
+ * Certificates a provider should act on: expired, or expiring soon.
+ *
+ * @param {Object} publicData - listing public data
+ * @param {Date} [now]
+ * @returns {Array<Object>} [{ label, expiry, daysLeft }] soonest first; daysLeft < 0 when expired
+ */
+export const certificatesNeedingRenewal = (publicData, now = new Date()) => {
+  const today = Date.parse(`${now.toISOString().slice(0, 10)}T00:00:00Z`);
+  return (Array.isArray(publicData?.certificates) ? publicData.certificates : [])
+    .map(c => {
+      const type = getCertificateType(c?.type);
+      if (!type || !isIsoDate(c.expiry)) {
+        return null;
+      }
+      const daysLeft = Math.round((Date.parse(`${c.expiry}T00:00:00Z`) - today) / 86400000);
+      return {
+        label: type.custom && c.name ? c.name : type.shortLabel,
+        expiry: c.expiry,
+        daysLeft,
+      };
+    })
+    .filter(c => c && c.daysLeft <= CERTIFICATE_REMINDER_DAYS)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+};

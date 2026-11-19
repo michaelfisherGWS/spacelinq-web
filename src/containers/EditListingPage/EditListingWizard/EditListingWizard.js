@@ -6,6 +6,7 @@ import { useConfiguration } from '../../../context/configurationContext';
 import { useRouteConfiguration } from '../../../context/routeConfigurationContext';
 import { FormattedMessage, intlShape, useIntl } from '../../../util/reactIntl';
 import { displayDescription } from '../../../util/configHelpers.js';
+import { isSpaceLinqListingType } from '../../../config/configSpaceLinq';
 import {
   displayDeliveryPickup,
   displayDeliveryShipping,
@@ -84,7 +85,7 @@ const STRIPE_ONBOARDING_RETURN_URL_FAILURE = 'failure';
  * @param {Object} listingTypeConfig - The listing type configuration
  * @returns {Array<string>} - The allowed tabs for the given process and listing type configuration
  */
-const tabsForListingType = (processName, listingTypeConfig) => {
+const tabsForListingType = (processName, listingTypeConfig, isNewListingFlow = true) => {
   const locationMaybe = displayLocation(listingTypeConfig) ? [LOCATION] : [];
   const pricingMaybe = displayPrice(listingTypeConfig) ? [PRICING] : [];
   const deliveryMaybe =
@@ -109,7 +110,12 @@ const tabsForListingType = (processName, listingTypeConfig) => {
     ['default-download']: [DETAILS, ...locationMaybe, FILES, ...pricingMaybe, ...styleOrPhotosTab],
   };
 
-  return tabs[processName] || tabs['default-inquiry'];
+  // SpaceLinq: once a listing exists, the provider can upload certificate documents.
+  // They are optional, so the tab is left out of the new-listing flow.
+  const documentsMaybe =
+    !isNewListingFlow && isSpaceLinqListingType(listingTypeConfig?.listingType) ? [FILES] : [];
+  const processTabs = tabs[processName] || tabs['default-inquiry'];
+  return processTabs.includes(FILES) ? processTabs : [...processTabs, ...documentsMaybe];
 };
 
 /**
@@ -139,7 +145,10 @@ const tabLabelAndSubmit = (intl, tab, isNewListingFlow, isPriceDisabled, process
     labelKey = 'EditListingWizard.tabLabelDelivery';
     submitButtonKey = `EditListingWizard.${processNameString}${newOrEdit}.saveDelivery`;
   } else if (tab === FILES) {
-    labelKey = 'EditListingWizard.tabLabelFiles';
+    labelKey =
+      processName === 'default-download'
+        ? 'EditListingWizard.tabLabelFiles'
+        : 'EditListingWizard.tabLabelSpaceLinqDocuments';
     submitButtonKey = `EditListingWizard.${processNameString}${newOrEdit}.saveFiles`;
   } else if (tab === LOCATION) {
     labelKey = 'EditListingWizard.tabLabelLocation';
@@ -593,7 +602,7 @@ class EditListingWizard extends Component {
     const tabs =
       isNewListingFlow && (invalidExistingListingType || !hasListingTypeSelected)
         ? TABS_DETAILS_ONLY
-        : tabsForListingType(processName, listingTypeConfig);
+        : tabsForListingType(processName, listingTypeConfig, isNewListingFlow);
 
     // Check if wizard tab is active / linkable.
     // When creating a new listing, we don't allow users to access next tab until the current one is completed.

@@ -369,6 +369,7 @@ const AddListingFields = props => {
     // SpaceLinq: the category has its own picker, and each category asks only its own fields
     const isTargetSpaceCategory =
       key !== SPACE_CATEGORY_FIELD_KEY &&
+      !fieldConfig.derived &&
       isFieldForSpaceListing(listingType, spaceCategory, fieldConfig);
 
     return isKnownSchemaType &&

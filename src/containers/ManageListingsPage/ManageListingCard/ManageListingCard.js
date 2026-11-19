@@ -21,6 +21,8 @@ import { isBookingProcessAlias, isPurchaseProcessAlias } from '../../../transact
 
 import { NamedLink, IconSpinner } from '../../../components';
 
+import { certificatesNeedingRenewal } from '../../../config/configSpaceLinq';
+
 import CardMenu from './CardMenu';
 import CardThumbnail from './CardThumbnail';
 import Overlay from './Overlay';
@@ -253,6 +255,23 @@ export const ManageListingCard = props => {
             <LinkedListingTitle state={state} id={id} slug={slug} title={title} />
           </div>
         </div>
+
+        {/* SpaceLinq: remind the provider about certificates that have expired or soon will */}
+        {certificatesNeedingRenewal(publicData).map(c => (
+          <p
+            key={`${c.label}-${c.expiry}`}
+            className={c.daysLeft < 0 ? css.certificateExpired : css.certificateExpiring}
+          >
+            <FormattedMessage
+              id={
+                c.daysLeft < 0
+                  ? 'ManageListingCard.spaceLinqCertificateExpired'
+                  : 'ManageListingCard.spaceLinqCertificateExpiring'
+              }
+              values={{ label: c.label, days: c.daysLeft }}
+            />
+          </p>
+        ))}
 
         <div className={css.manageLinks}>
           <NamedLink

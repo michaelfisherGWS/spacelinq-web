@@ -10,6 +10,7 @@ import { LISTING_STATE_DRAFT } from '../../../../util/types';
 import { H3, FileUpload, ListingLink } from '../../../../components';
 
 import EditListingFilesForm from './EditListingFilesForm';
+import { isSpaceLinqListingType } from '../../../../config/configSpaceLinq';
 import css from './EditListingFilesPanel.module.css';
 import { useConfiguration } from '../../../../context/configurationContext';
 
@@ -136,7 +137,9 @@ const EditListingFilesPanel = props => {
         messageProps: {},
       }
     : {
-        id: 'EditListingFilesPanel.title',
+        id: isSpaceLinqListingType(listing?.attributes?.publicData?.listingType)
+          ? 'EditListingFilesPanel.spaceLinqTitle'
+          : 'EditListingFilesPanel.title',
         values: { listingTitle: <ListingLink listing={listing} />, lineBreak: <br /> },
         messageProps: { listingTitle: listing.attributes.title },
       };
@@ -148,7 +151,10 @@ const EditListingFilesPanel = props => {
 
   const allowFiles =
     !config.accessControl.marketplace.fileUploadAndDownloadDisabled && !fileUploadsDisabled;
-  const listingTypeHasFileAttachments = foundListingTypeConfig?.defaultListingFields?.files;
+  // SpaceLinq: space listings take optional certificate documents instead of files for sale
+  const isDocuments = isSpaceLinqListingType(foundListingTypeConfig?.listingType);
+  const listingTypeHasFileAttachments =
+    isDocuments || foundListingTypeConfig?.defaultListingFields?.files;
   const showAttachFiles = listingTypeHasFileAttachments && allowFiles;
 
   const shouldBlockNavigation = showAttachFiles && hasUnattachedFileUploads(fileUploads, listing);
@@ -233,6 +239,12 @@ const EditListingFilesPanel = props => {
             onFileUpload={onUploadFileToPanel}
             files={fileUploads}
             showAttachFiles={showAttachFiles}
+            filesOptional={isDocuments}
+            helpTextId={
+              isDocuments
+                ? 'EditListingFilesForm.spaceLinqHelpText'
+                : 'EditListingFilesForm.helpText'
+            }
             isDraft={isDraft}
             hasPendingFileUploads={hasPendingFileUploads}
             fileInputRef={fileInputRef}

@@ -1758,5 +1758,10 @@
   "SpaceLinqBookingRecord.agreementAccepted": "Accepted{hasName, select, yes { by {name}} other {}} on {date} (version {version})",
   "SpaceLinqBookingRecord.company": "Business customer",
   "SpaceLinqBookingRecord.companyHiddenProvider": "The company name is shown once the booking is confirmed.",
-  "SpaceLinqBookingRecord.companyHiddenCustomer": "Your company name is shared with the provider once the booking is confirmed."
+  "SpaceLinqBookingRecord.companyHiddenCustomer": "Your company name is shared with the provider once the booking is confirmed.",
+  "EditListingWizard.tabLabelSpaceLinqDocuments": "Documents",
+  "EditListingFilesPanel.spaceLinqTitle": "Certificate documents for {listingTitle}",
+  "EditListingFilesForm.spaceLinqHelpText": "Optional. Upload a copy of each certificate you listed under Details so SpaceLinq can verify it. Only you and SpaceLinq can see these files. Customers cannot.",
+  "ManageListingCard.spaceLinqCertificateExpired": "{label} certificate has expired and is no longer shown. Update it under Edit listing.",
+  "ManageListingCard.spaceLinqCertificateExpiring": "{label} certificate expires {days, plural, =0 {today} one {in # day} other {in # days}}. Update it under Edit listing."
 }
