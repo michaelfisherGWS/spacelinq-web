@@ -118,3 +118,48 @@
 .chargeNoteInput {
   width: 100%;
 }
+
+/* Import a month's activity from the provider's own system */
+.activityImport {
+  margin: 0 0 16px 0;
+  padding: 12px;
+  border: 1px dashed var(--colorGrey300);
+  border-radius: var(--borderRadiusMedium);
+}
+
+.activityImportLabel {
+  composes: marketplaceSmallFontStyles from global;
+  display: block;
+  font-weight: var(--fontWeightSemiBold);
+  margin: 0 0 4px 0;
+  padding: 0;
+}
+
+.activityImportInput {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  font-size: 14px;
+}
+
+.activityTemplate {
+  composes: marketplaceSmallFontStyles from global;
+}
+
+.activityResult {
+  margin-top: 8px;
+}
+
+.activityResultLine {
+  composes: marketplaceSmallFontStyles from global;
+  font-weight: var(--fontWeightSemiBold);
+  margin: 0;
+}
+
+.activitySkipped {
+  composes: marketplaceTinyFontStyles from global;
+  color: var(--colorGrey700);
+  margin: 0;
+}

@@ -1780,5 +1780,12 @@
   "SpaceLinqAdminCertificates.expired": "Expired",
   "SpaceLinqAdminCertificates.detail": "No. {number} · expires {expiry}{hasIssuer, select, yes { · issued by {issuer}} other {}}",
   "SpaceLinqAdminCertificates.verify": "Verify",
-  "SpaceLinqAdminCertificates.unverify": "Remove verification"
+  "SpaceLinqAdminCertificates.unverify": "Remove verification",
+  "SpaceLinqPaymentSchedule.importActivity": "Import activity from your warehouse system (CSV file)",
+  "SpaceLinqPaymentSchedule.importTemplate": "Download a starter file",
+  "SpaceLinqPaymentSchedule.importHelp": "The file needs the columns service and quantity; date, reference and note are optional. Lines are added up per service and fill in the boxes below for you to check. Nothing is charged until you save.",
+  "SpaceLinqPaymentSchedule.importError": "{error, select, empty {That file is empty or could not be read.} too-many {That file has too many lines. Split it and import one part.} other {The first row must name the columns service and quantity.}}",
+  "SpaceLinqPaymentSchedule.importResult": "{fileName}: {counted, plural, one {# line} other {# lines}} added up{skipped, plural, =0 {} one {, # line left out} other {, # lines left out}}.",
+  "SpaceLinqPaymentSchedule.importSkipped": "Row {row} ({service}): {reason, select, outside-period {dated outside the month being billed} bad-quantity {the quantity is not a number above zero} bad-date {the date could not be read} other {this service is not on your rate card}}",
+  "SpaceLinqPaymentSchedule.importSkippedMore": "and {count} more."
 }

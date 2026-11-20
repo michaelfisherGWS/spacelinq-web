@@ -21,6 +21,13 @@ import {
 } from '../../../util/spaceLinqInstalments';
 import { H6, InlineTextButton, PrimaryButton, NamedLink } from '../../../components';
 
+import {
+  activityPeriodFor,
+  activityTemplateCsv,
+  parseActivityCsv,
+  summariseActivity,
+} from '../../../util/spaceLinqActivity';
+
 import css from './SpaceLinqPaymentSchedule.module.css';
 
 const { Money } = sdkTypes;
@@ -69,6 +76,7 @@ const SpaceLinqPaymentSchedule = props => {
   const [payingId, setPayingId] = useState(null);
   const [payError, setPayError] = useState(null);
   const [chargeForm, setChargeForm] = useState(emptyChargeForm);
+  const [activityImport, setActivityImport] = useState(null);
   const [chargeSaving, setChargeSaving] = useState(false);
   const [chargeError, setChargeError] = useState(false);
 
@@ -151,6 +159,45 @@ const SpaceLinqPaymentSchedule = props => {
       .then(() => setPayingId(null));
   };
 
+  // Import a month's activity from a file exported from the provider's own system.
+  // It fills in the quantities below; nothing is charged until the provider saves.
+  const onImportActivity = (tx, file) => {
+    if (!file) {
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const { lines, error } = parseActivityCsv(reader.result);
+      if (error) {
+        setActivityImport({ txId: tx.id.uuid, error });
+        return;
+      }
+      const start = tx.booking?.attributes?.start;
+      const summary = summariseActivity(lines, rateCard, activityPeriodFor(start));
+      setActivityImport({ txId: tx.id.uuid, fileName: file.name, ...summary });
+      setChargeForm(form => ({
+        ...form,
+        quantities: Object.keys(summary.quantities).reduce(
+          (acc, key) => ({ ...acc, [key]: `${summary.quantities[key]}` }),
+          {}
+        ),
+      }));
+    };
+    reader.onerror = () => setActivityImport({ txId: tx.id.uuid, error: 'empty' });
+    reader.readAsText(file);
+  };
+
+  const onDownloadTemplate = tx => {
+    const period = activityPeriodFor(tx.booking?.attributes?.start);
+    const csv = activityTemplateCsv(rateCard, period?.from || '');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'spacelinq-activity-template.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const onSaveCharges = tx => {
     const serviceCharges = rateCard
       .map(r => ({ key: r.key, quantity: Number(chargeForm.quantities[r.key]) || 0 }))
@@ -194,6 +241,64 @@ const SpaceLinqPaymentSchedule = props => {
       <p className={css.intro}>
         <FormattedMessage id="SpaceLinqPaymentSchedule.chargesHelp" />
       </p>
+      <div className={css.activityImport}>
+        <label className={css.activityImportLabel}>
+          <FormattedMessage id="SpaceLinqPaymentSchedule.importActivity" />
+          <input
+            className={css.activityImportInput}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={e => {
+              onImportActivity(tx, e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+        </label>
+        <InlineTextButton className={css.activityTemplate} onClick={() => onDownloadTemplate(tx)}>
+          <FormattedMessage id="SpaceLinqPaymentSchedule.importTemplate" />
+        </InlineTextButton>
+        <p className={css.intro}>
+          <FormattedMessage id="SpaceLinqPaymentSchedule.importHelp" />
+        </p>
+        {activityImport?.txId === tx.id.uuid && activityImport.error ? (
+          <p className={css.error}>
+            <FormattedMessage
+              id="SpaceLinqPaymentSchedule.importError"
+              values={{ error: activityImport.error }}
+            />
+          </p>
+        ) : null}
+        {activityImport?.txId === tx.id.uuid && !activityImport.error ? (
+          <div className={css.activityResult}>
+            <p className={css.activityResultLine}>
+              <FormattedMessage
+                id="SpaceLinqPaymentSchedule.importResult"
+                values={{
+                  fileName: activityImport.fileName,
+                  counted: activityImport.counted,
+                  skipped: activityImport.skipped.length,
+                }}
+              />
+            </p>
+            {activityImport.skipped.slice(0, 8).map(line => (
+              <p key={`${line.row}-${line.reason}`} className={css.activitySkipped}>
+                <FormattedMessage
+                  id="SpaceLinqPaymentSchedule.importSkipped"
+                  values={{ row: line.row, service: line.service, reason: line.reason }}
+                />
+              </p>
+            ))}
+            {activityImport.skipped.length > 8 ? (
+              <p className={css.activitySkipped}>
+                <FormattedMessage
+                  id="SpaceLinqPaymentSchedule.importSkippedMore"
+                  values={{ count: activityImport.skipped.length - 8 }}
+                />
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
       {rateCard.map(r => (
         <label key={r.key} className={css.chargeRow}>
           <span className={css.chargeLabel}>
