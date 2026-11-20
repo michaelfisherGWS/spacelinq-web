@@ -36,6 +36,9 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // The saved card is charged this many days before a month starts (see process.edn).
 const CHARGE_DAYS_BEFORE = 3;
 
+// Message select keys cannot contain hyphens
+const messageKey = code => `${code || ''}`.replace(/-/g, '');
+
 const emptyChargeForm = { txId: null, quantities: {}, otherAmount: '', otherNote: '' };
 
 // Form values for an instalment's existing charges
@@ -264,7 +267,7 @@ const SpaceLinqPaymentSchedule = props => {
           <p className={css.error}>
             <FormattedMessage
               id="SpaceLinqPaymentSchedule.importError"
-              values={{ error: activityImport.error }}
+              values={{ error: messageKey(activityImport.error) }}
             />
           </p>
         ) : null}
@@ -284,7 +287,11 @@ const SpaceLinqPaymentSchedule = props => {
               <p key={`${line.row}-${line.reason}`} className={css.activitySkipped}>
                 <FormattedMessage
                   id="SpaceLinqPaymentSchedule.importSkipped"
-                  values={{ row: line.row, service: line.service, reason: line.reason }}
+                  values={{
+                    row: line.row,
+                    service: line.service,
+                    reason: messageKey(line.reason),
+                  }}
                 />
               </p>
             ))}
